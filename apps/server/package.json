@@ -1,23 +1,35 @@
 {
   "name": "server",
-  "module": "index.ts",
+  "module": "src/index.ts",
   "type": "module",
   "private": true,
   "scripts": {
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit",
-    "dev": "bun run --watch --hot ./src/index.ts",
-    "build": "bun build --outdir=dist --minify ./src/index.ts",
-    "start": "bun run build --outdir=dist --minify ./src/index.ts && bun run dist/index.js"
+    "dev": "bun --watch --env-file=.env ./src/index.ts",
+    "build": "bun build --target=bun --outdir=dist --minify ./src/index.ts",
+    "start": "bun run build && bun --env-file=.env ./dist/index.js"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "@types/bun": "latest",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "eslint": "^9.39.1",
     "typescript": "5.9.2"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "winston": "^3.19.0",
+    "zod": "^4.4.3"
   }
 }

@@ -22,6 +22,20 @@ export const config = [
     },
   },
   {
+    rules: {
+      // Underscore-prefixed identifiers are intentionally unused, e.g. the
+      // `_next` argument Express requires on error-handling middleware.
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
+  {
     plugins: {
       onlyWarn,
     },
