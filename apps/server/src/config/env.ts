@@ -5,6 +5,9 @@ const _envConfig = {
   CRAWLBASE_PROXY_HOST: process.env.CRAWLBASE_PROXY_HOST || '',
   CRAWLBASE_PROXY_KEY: process.env.CRAWLBASE_PROXY_KEY || '',
   CRAWLBASE_PROXY_PORT: Number(process.env.CRAWLBASE_PROXY_PORT) || 8012,
+
+  DATABASE_URL: process.env.DATABASE_URL || '',
+  DIRECT_URL: process.env.DIRECT_URL || '',
 };
 
 const envConfig = Object.freeze(_envConfig);

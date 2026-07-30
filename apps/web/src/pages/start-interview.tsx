@@ -64,8 +64,8 @@ const StartInterviewPage = () => {
     form.clearErrors('root');
 
     try {
-      const { data } = await startPreInterview(sources);
-      console.info('pre-interview', data);
+      const { id } = await startPreInterview(sources);
+      console.info('pre-interview', id);
     } catch (error) {
       if (error instanceof ApiError) {
         // A 422 names the offending field, so show it on the input itself.

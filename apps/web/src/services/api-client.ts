@@ -5,10 +5,11 @@ export type ApiFieldError = {
   message: string;
 };
 
-type ApiErrorBody = {
+type ApiEnvelope = {
   status: number;
   message: string;
-  data: ApiFieldError[] | null;
+  data: unknown;
+  success: boolean;
 };
 
 export class ApiError extends Error {
@@ -23,8 +24,25 @@ export class ApiError extends Error {
   }
 }
 
-const isErrorBody = (body: unknown): body is ApiErrorBody =>
-  typeof body === 'object' && body !== null && 'message' in body;
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isEnvelope = (body: unknown): body is ApiEnvelope =>
+  isRecord(body) &&
+  typeof body.status === 'number' &&
+  typeof body.message === 'string' &&
+  typeof body.success === 'boolean' &&
+  'data' in body;
+
+const toFieldErrors = (data: unknown): ApiFieldError[] => {
+  if (!Array.isArray(data)) return [];
+
+  return data.flatMap((entry: unknown) => {
+    if (!isRecord(entry) || typeof entry.message !== 'string') return [];
+    if (typeof entry.field !== 'string' && typeof entry.field !== 'number') return [];
+    return [{ field: String(entry.field), message: entry.message }];
+  });
+};
 
 export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${envConfig.API_BASE_URL}${path}`, {
@@ -39,12 +57,12 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
   const body: unknown = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const message = isErrorBody(body) ? body.message : `Request failed (${response.status})`;
-    const fieldErrors = isErrorBody(body) && Array.isArray(body.data) ? body.data : [];
+    const message = isEnvelope(body) ? body.message : `Request failed (${response.status})`;
+    const fieldErrors = isEnvelope(body) ? toFieldErrors(body.data) : [];
     throw new ApiError(response.status, message, fieldErrors);
   }
 
-  return body as T;
+  return (isEnvelope(body) ? body.data : body) as T;
 }
 
 export const apiPost = <T>(path: string, payload: unknown) =>
