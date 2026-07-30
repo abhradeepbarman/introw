@@ -11,16 +11,17 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { ApiError } from '@/services/api-client';
 import { startPreInterview } from '@/services/interview.service';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   githubUrlSchema,
   interviewSourcesSchema,
   type InterviewSources,
 } from '@repo/common/validations';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRight, Github } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { ArrowRight, Github } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 
 type SourceRowProps = {
   icon: LucideIcon;
@@ -56,6 +57,7 @@ const StartInterviewPage = () => {
     mode: 'onChange',
     defaultValues: { githubUrl: '' },
   });
+  const navigate = useNavigate();
 
   const values = form.watch();
   const githubReady = githubUrlSchema.safeParse(values.githubUrl).success;
@@ -66,6 +68,7 @@ const StartInterviewPage = () => {
     try {
       const { id } = await startPreInterview(sources);
       console.info('pre-interview', id);
+      navigate(`/interview/${id}`);
     } catch (error) {
       if (error instanceof ApiError) {
         // A 422 names the offending field, so show it on the input itself.
