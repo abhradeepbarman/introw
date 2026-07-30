@@ -9,14 +9,15 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { ApiError } from '@/services/api-client';
+import { startPreInterview } from '@/services/interview.service';
 import {
   githubUrlSchema,
   interviewSourcesSchema,
-  linkedinUrlSchema,
   type InterviewSources,
 } from '@repo/common/validations';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRight, Github, Linkedin } from 'lucide-react';
+import { ArrowRight, Github } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
@@ -25,7 +26,6 @@ type SourceRowProps = {
   icon: LucideIcon;
   iconClassName: string;
   ready: boolean;
-  connected: boolean;
   children: ReactNode;
 };
 
@@ -33,12 +33,9 @@ type SourceRowProps = {
  * One source on the intake rail: a marker that keeps the source's own colour,
  * and a status that flips once the URL parses as a real profile.
  */
-function SourceRow({ icon: Icon, iconClassName, ready, connected, children }: SourceRowProps) {
+function SourceRow({ icon: Icon, iconClassName, ready, children }: SourceRowProps) {
   return (
     <div className="relative pl-11">
-      {connected && (
-        <span aria-hidden className="absolute -bottom-7 left-3.25 top-9 w-px bg-border" />
-      )}
       <span
         aria-hidden
         className={cn(
@@ -57,17 +54,32 @@ const StartInterviewPage = () => {
   const form = useForm<InterviewSources>({
     resolver: zodResolver(interviewSourcesSchema),
     mode: 'onChange',
-    defaultValues: { linkedinUrl: '', githubUrl: '' },
+    defaultValues: { githubUrl: '' },
   });
 
   const values = form.watch();
-  const linkedinReady = linkedinUrlSchema.safeParse(values.linkedinUrl).success;
   const githubReady = githubUrlSchema.safeParse(values.githubUrl).success;
-  const readyCount = Number(linkedinReady) + Number(githubReady);
 
   const onSubmit = async (sources: InterviewSources) => {
-    // TODO: POST to the interview endpoint once it exists on the server.
-    console.info('start interview', sources);
+    form.clearErrors('root');
+
+    try {
+      const { data } = await startPreInterview(sources);
+      console.info('pre-interview', data);
+    } catch (error) {
+      if (error instanceof ApiError) {
+        // A 422 names the offending field, so show it on the input itself.
+        const fieldError = error.fieldErrors.find((issue) => issue.field === 'githubUrl');
+        if (fieldError) {
+          form.setError('githubUrl', { message: fieldError.message });
+          return;
+        }
+        form.setError('root', { message: error.message });
+        return;
+      }
+
+      form.setError('root', { message: 'Could not reach the server. Try again.' });
+    }
   };
 
   return (
@@ -86,28 +98,29 @@ const StartInterviewPage = () => {
               AI technical interview
             </p>
             <h1 className="mt-5 text-[clamp(2.25rem,5vw,3.5rem)] font-semibold leading-[1.04] tracking-[-0.03em]">
-              Your profile tells one story.
+              Your résumé tells one story.
               <span className="block text-muted-foreground">Your commits tell another.</span>
             </h1>
             <p className="mt-6 max-w-md leading-relaxed text-muted-foreground">
-              Intervue reads both, then asks the questions that live in between. Two links to begin.
+              Intervue reads what you actually shipped, then asks the questions that live in the
+              code. One link to begin.
             </p>
           </section>
 
           <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <div className="flex items-baseline justify-between px-6 py-4">
               <h2 className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-muted-foreground">
-                Sources
+                Source
               </h2>
               <span className="font-mono text-[0.6875rem] tabular-nums text-muted-foreground">
-                {readyCount} of 2 linked
+                {Number(githubReady)} of 1 linked
               </span>
             </div>
 
             <div className="h-0.5 bg-muted" role="presentation">
               <div
                 className="h-full bg-brand transition-[width] duration-500 ease-out"
-                style={{ width: `${(readyCount / 2) * 100}%` }}
+                style={{ width: `${Number(githubReady) * 100}%` }}
               />
             </div>
 
@@ -115,55 +128,9 @@ const StartInterviewPage = () => {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-7 px-6 py-7">
                 <FormField
                   control={form.control}
-                  name="linkedinUrl"
-                  render={({ field }) => (
-                    <SourceRow
-                      icon={Linkedin}
-                      iconClassName="text-source-linkedin"
-                      ready={linkedinReady}
-                      connected
-                    >
-                      <FormItem className="gap-2">
-                        <div className="flex items-baseline justify-between">
-                          <FormLabel className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground">
-                            LinkedIn
-                          </FormLabel>
-                          <span
-                            className={cn(
-                              'font-mono text-[0.625rem] uppercase tracking-[0.16em] transition-colors',
-                              linkedinReady ? 'text-brand' : 'text-muted-foreground/70',
-                            )}
-                          >
-                            {linkedinReady ? 'Linked' : 'Awaiting'}
-                          </span>
-                        </div>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="url"
-                            inputMode="url"
-                            autoComplete="url"
-                            spellCheck={false}
-                            placeholder="https://linkedin.com/in/your-handle"
-                            className="h-11"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    </SourceRow>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
                   name="githubUrl"
                   render={({ field }) => (
-                    <SourceRow
-                      icon={Github}
-                      iconClassName="text-source-github"
-                      ready={githubReady}
-                      connected={false}
-                    >
+                    <SourceRow icon={Github} iconClassName="text-source-github" ready={githubReady}>
                       <FormItem className="gap-2">
                         <div className="flex items-baseline justify-between">
                           <FormLabel className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground">
@@ -204,8 +171,15 @@ const StartInterviewPage = () => {
                     {form.formState.isSubmitting ? 'Starting' : 'Start interview'}
                     <ArrowRight className="size-4" />
                   </Button>
-                  <p className="text-center text-xs text-muted-foreground">
-                    Both links should point to public profiles.
+                  <p
+                    className={cn(
+                      'text-center text-xs',
+                      form.formState.errors.root ? 'text-destructive' : 'text-muted-foreground',
+                    )}
+                    role={form.formState.errors.root ? 'alert' : undefined}
+                  >
+                    {form.formState.errors.root?.message ??
+                      'Your link should point to a public profile.'}
                   </p>
                 </div>
               </form>

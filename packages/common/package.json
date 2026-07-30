@@ -4,7 +4,10 @@
   "type": "module",
   "private": true,
   "exports": {
-    "./validations": "./src/validations/index.ts"
+    "./validations": {
+      "import": "./src/validations/index.ts",
+      "require": "./src/validations/index.ts"
+    }
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

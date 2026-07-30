@@ -5,6 +5,7 @@ import envConfig from './config/env';
 import errorHandler from './middlewares/error-handler';
 import CustomErrorHandler from './utils/custom-error-handler';
 import { logger } from './utils/logger';
+import routes from './routes';
 
 const app: Application = express();
 
@@ -19,15 +20,12 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
 
 // routes
-app.get('/', (_req, res) => {
-  res.status(200).json({
-    message: 'Welcome to the API',
-  });
-});
+app.use('/api/v1', routes);
 app.use((_req, _res, next) => {
   next(CustomErrorHandler.notFound());
 });
 
+// error handler
 app.use(errorHandler);
 
 app.listen(envConfig.PORT, () => {

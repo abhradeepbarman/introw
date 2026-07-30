@@ -11,7 +11,6 @@
   --brand-hover: hsl(166 88% 20%);
   --brand-foreground: hsl(0 0% 100%);
   --brand-wash: hsl(166 52% 96%);
-  --source-linkedin: hsl(207 90% 40%);
   --source-github: hsl(213 12% 14%);
 
   --background: hsl(220 24% 98%);
@@ -89,7 +88,6 @@
   --color-brand-hover: var(--brand-hover);
   --color-brand-foreground: var(--brand-foreground);
   --color-brand-wash: var(--brand-wash);
-  --color-source-linkedin: var(--source-linkedin);
   --color-source-github: var(--source-github);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
