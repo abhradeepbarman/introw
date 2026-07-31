@@ -1,6 +1,6 @@
-const _env = {
+const _envConfig = {
   API_BASE_URL: process.env.BUN_PUBLIC_API_BASE_URL || '',
 };
 
-const env = Object.freeze(_env);
-export default env;
+const envConfig = Object.freeze(_envConfig);
+export default envConfig;

@@ -9,6 +9,7 @@ import routes from './routes';
 
 const app: Application = express();
 
+// middlewares
 app.use(
   cors({
     origin: [envConfig.APP_URL],
@@ -18,6 +19,7 @@ app.use(
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
+app.use(express.text({ type: ['application/sdp', 'text/plain'] }));
 
 // routes
 app.use('/api/v1', routes);
