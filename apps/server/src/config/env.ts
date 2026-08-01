@@ -10,6 +10,7 @@ const _envConfig = {
   DIRECT_URL: process.env.DIRECT_URL || '',
 
   OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+  DEEPGRAM_API_KEY: process.env.DEEPGRAM_API_KEY || '',
 };
 
 const envConfig = Object.freeze(_envConfig);

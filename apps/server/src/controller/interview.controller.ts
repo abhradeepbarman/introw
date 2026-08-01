@@ -6,8 +6,9 @@ import { prisma } from '../lib/prisma';
 import ResponseHandler from '../utils/response-handler';
 import CustomErrorHandler from '../utils/custom-error-handler';
 import { initSideband } from '../utils/sideband';
+import { logger } from '../utils/logger';
 
-export const preInterviewHandler = asyncHandler(async (req, res) => {
+export const createInterview = asyncHandler(async (req, res) => {
   const { githubUrl } = interviewSourcesSchema.parse(req.body);
   const githubUsername = githubUrl.replace(/\/+$/, '').split('/').pop();
   const githubApiUrl = `https://api.github.com/users/${githubUsername}/repos`;
@@ -46,7 +47,7 @@ const sessionConfig = JSON.stringify({
   },
 });
 
-export const sessionHandler = asyncHandler(async (req, res, next) => {
+export const createSession = asyncHandler(async (req, res, next) => {
   const { id: interviewId } = req.params as { id: string };
 
   const interview = await prisma.interview.findUnique({
@@ -81,4 +82,36 @@ export const sessionHandler = asyncHandler(async (req, res, next) => {
   await initSideband(callId, interviewId);
 
   return res.status(200).send(ResponseHandler(200, 'Session created successfully', { sdp }));
+});
+
+export const createSttGrant = asyncHandler(async (req, res, next) => {
+  const { id: interviewId } = req.params as { id: string };
+
+  const interview = await prisma.interview.findUnique({
+    where: { id: interviewId },
+  });
+
+  if (!interview) {
+    return next(CustomErrorHandler.notFound('Interview not found'));
+  }
+
+  const response = await fetch('https://api.deepgram.com/v1/auth/grant', {
+    method: 'POST',
+    headers: {
+      Authorization: `Token ${envConfig.DEEPGRAM_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    // Defaults to 30s, which is tight if the caller stalls before opening the socket.
+    body: JSON.stringify({ ttl_seconds: 300 }),
+  });
+  const data = await response.json();
+
+  // Without this a failed grant still returns 200 with no access_token,
+  // and the only symptom is an opaque WebSocket handshake failure.
+  if (!response.ok) {
+    logger.error('Deepgram STT grant failed', { status: response.status, data });
+    return next(CustomErrorHandler.serverError('Could not create a speech-to-text grant'));
+  }
+
+  return res.status(200).send(ResponseHandler(200, 'STT grant created successfully', data));
 });

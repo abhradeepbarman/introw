@@ -3,6 +3,6 @@ import interviewRoutes from './interview.routes';
 
 const router = Router();
 
-router.use('/interview', interviewRoutes);
+router.use('/interviews', interviewRoutes);
 
 export default router;

@@ -10,7 +10,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { ApiError } from '@/services/api-client';
-import { startPreInterview } from '@/services/interview.service';
+import { createInterview } from '@/services/interview.service';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   githubUrlSchema,
@@ -66,12 +66,10 @@ const StartInterviewPage = () => {
     form.clearErrors('root');
 
     try {
-      const { id } = await startPreInterview(sources);
-      console.info('pre-interview', id);
+      const { id } = await createInterview(sources);
       navigate(`/interview/${id}`);
     } catch (error) {
       if (error instanceof ApiError) {
-        // A 422 names the offending field, so show it on the input itself.
         const fieldError = error.fieldErrors.find((issue) => issue.field === 'githubUrl');
         if (fieldError) {
           form.setError('githubUrl', { message: fieldError.message });

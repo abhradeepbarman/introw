@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ApiError } from '@/services/api-client';
-import { createSession } from '@/services/interview.service';
+import { createSttGrant } from '@/services/interview.service';
 import type { LucideIcon } from 'lucide-react';
 import { Bot, Mic, MicOff, PhoneOff, User } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -9,40 +9,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 type Status = 'idle' | 'connecting' | 'live' | 'ended' | 'error';
 type Turn = 'interviewer' | 'candidate' | 'silent';
-
-/** Below this RMS the room counts as quiet, so neither side holds the floor. */
-const SPEAKING_THRESHOLD = 0.05;
-
-type SeatProps = {
-  icon: LucideIcon;
-  name: string;
-  speaking: boolean;
-  muted?: boolean;
-};
-
-/** One person in the room. The border is the only thing that says who is talking. */
-function Seat({ icon: Icon, name, speaking, muted = false }: SeatProps) {
-  return (
-    <div className="flex flex-col items-center gap-4">
-      <span
-        className={cn(
-          'relative flex size-24 items-center justify-center rounded-full border-2 transition-colors duration-200',
-          speaking ? 'border-brand text-brand' : 'border-border text-muted-foreground',
-        )}
-      >
-        <Icon className="size-9" strokeWidth={1.5} />
-        {muted && (
-          <span className="absolute -bottom-0.5 -right-0.5 flex size-7 items-center justify-center rounded-full border border-border bg-background text-muted-foreground">
-            <MicOff className="size-3.5" />
-          </span>
-        )}
-      </span>
-      <span className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-muted-foreground">
-        {name}
-      </span>
-    </div>
-  );
-}
 
 const InterviewRoom = () => {
   const { id: interviewId } = useParams();
@@ -61,10 +27,18 @@ const InterviewRoom = () => {
   const remoteAnalyserRef = useRef<AnalyserNode | null>(null);
   const frameRef = useRef<number | null>(null);
   const turnRef = useRef<Turn>('silent');
+  const socketRef = useRef<WebSocket | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
 
   const teardown = useCallback(() => {
     if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
     frameRef.current = null;
+
+    if (recorderRef.current?.state !== 'inactive') recorderRef.current?.stop();
+    recorderRef.current = null;
+
+    socketRef.current?.close();
+    socketRef.current = null;
 
     micStreamRef.current?.getTracks().forEach((track) => track.stop());
     micStreamRef.current = null;
@@ -83,26 +57,32 @@ const InterviewRoom = () => {
     }
   }, []);
 
-  /** Compares both sides each frame; only a change of speaker reaches React. */
   const startMeter = useCallback(() => {
-    const bins = new Uint8Array(
-      (localAnalyserRef.current ?? remoteAnalyserRef.current)?.frequencyBinCount ?? 0,
+    const samples = new Float32Array(
+      (localAnalyserRef.current ?? remoteAnalyserRef.current)?.fftSize ?? 0,
     );
 
     const levelOf = (analyser: AnalyserNode | null) => {
       if (!analyser) return 0;
-      analyser.getByteFrequencyData(bins);
+      analyser.getFloatTimeDomainData(samples);
       let total = 0;
-      for (let i = 0; i < bins.length; i += 1) total += bins[i]! * bins[i]!;
-      return Math.sqrt(total / bins.length) / 255;
+      for (let i = 0; i < samples.length; i += 1) total += samples[i]! * samples[i]!;
+      return Math.sqrt(total / samples.length);
     };
 
+    const hold = (previous: number, level: number) =>
+      level > previous ? level : previous * 0.9 + level * 0.1;
+
+    let remoteLevel = 0;
+    let localLevel = 0;
+
     const frame = () => {
-      // A muted mic track is disabled, so its analyser already reads as silence.
-      const remoteLevel = levelOf(remoteAnalyserRef.current);
-      const localLevel = levelOf(localAnalyserRef.current);
+      remoteLevel = hold(remoteLevel, levelOf(remoteAnalyserRef.current));
+      localLevel = hold(localLevel, levelOf(localAnalyserRef.current));
 
       let next: Turn = 'silent';
+      const SPEAKING_THRESHOLD = 0.02;
+
       if (Math.max(remoteLevel, localLevel) > SPEAKING_THRESHOLD) {
         next = remoteLevel >= localLevel ? 'interviewer' : 'candidate';
       }
@@ -138,7 +118,7 @@ const InterviewRoom = () => {
       audioContextRef.current = context;
 
       const localAnalyser = context.createAnalyser();
-      localAnalyser.fftSize = 128;
+      localAnalyser.fftSize = 1024;
       context.createMediaStreamSource(micStream).connect(localAnalyser);
       localAnalyserRef.current = localAnalyser;
 
@@ -149,18 +129,84 @@ const InterviewRoom = () => {
         audio.srcObject = remoteStream;
 
         const remoteAnalyser = context.createAnalyser();
-        remoteAnalyser.fftSize = 128;
+        remoteAnalyser.fftSize = 1024;
         context.createMediaStreamSource(remoteStream).connect(remoteAnalyser);
         remoteAnalyserRef.current = remoteAnalyser;
       };
 
       micStream.getTracks().forEach((track) => peer.addTrack(track, micStream));
 
-      const offer = await peer.createOffer();
-      await peer.setLocalDescription(offer);
+      // const offer = await peer.createOffer();
+      // await peer.setLocalDescription(offer);
 
-      const { sdp } = await createSession(interviewId, offer.sdp ?? '');
-      await peer.setRemoteDescription({ type: 'answer', sdp });
+      // const { sdp } = await createSession(interviewId, offer.sdp ?? '');
+      // await peer.setRemoteDescription({ type: 'answer', sdp });
+
+      const { access_token } = await createSttGrant(interviewId);
+      const socket = new WebSocket(
+        'wss://api.deepgram.com/v1/listen?' +
+          new URLSearchParams({
+            model: 'nova-3',
+            language: 'en-US',
+            interim_results: 'true',
+            punctuate: 'true',
+            smart_format: 'true',
+            endpointing: '300',
+            vad_events: 'true',
+          }),
+        ['bearer', access_token],
+      );
+      socketRef.current = socket;
+
+      await new Promise((resolve, reject) => {
+        socket.onopen = resolve;
+        socket.onerror = () => reject(new Error('Transcription socket failed to open'));
+      });
+
+      socket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+
+        switch (message.type) {
+          case 'Results':
+            console.log(
+              message.channel.alternatives[0].transcript,
+              message.is_final,
+              message.speech_final,
+            );
+            break;
+
+          case 'SpeechStarted':
+            console.log('Speech started');
+            break;
+
+          case 'UtteranceEnd':
+            console.log('Utterance ended');
+            break;
+
+          case 'Metadata':
+            console.log(message);
+            break;
+        }
+      };
+
+      socket.onerror = (err) => {
+        console.error(err);
+      };
+
+      socket.onclose = (event) => {
+        console.log('Closed', event.code, event.reason);
+      };
+
+      const recorder = new MediaRecorder(micStream, { mimeType: 'audio/webm;codecs=opus' });
+      recorderRef.current = recorder;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
+          socket.send(event.data);
+        }
+      };
+      // Deepgram drops a socket that goes ~12s without audio, so keep chunks small.
+      recorder.start(250);
 
       setStatus('live');
       startMeter();
@@ -264,5 +310,35 @@ const InterviewRoom = () => {
     </main>
   );
 };
+
+type SeatProps = {
+  icon: LucideIcon;
+  name: string;
+  speaking: boolean;
+  muted?: boolean;
+};
+
+function Seat({ icon: Icon, name, speaking, muted = false }: SeatProps) {
+  return (
+    <div className="flex flex-col items-center gap-4">
+      <span
+        className={cn(
+          'relative flex size-24 items-center justify-center rounded-full border-2 transition-colors duration-200',
+          speaking ? 'border-brand text-brand' : 'border-border text-muted-foreground',
+        )}
+      >
+        <Icon className="size-9" strokeWidth={1.5} />
+        {muted && (
+          <span className="absolute -bottom-0.5 -right-0.5 flex size-7 items-center justify-center rounded-full border border-border bg-background text-muted-foreground">
+            <MicOff className="size-3.5" />
+          </span>
+        )}
+      </span>
+      <span className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-muted-foreground">
+        {name}
+      </span>
+    </div>
+  );
+}
 
 export default InterviewRoom;

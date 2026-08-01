@@ -1,9 +1,10 @@
 import { Router } from 'express';
-import { preInterviewHandler, sessionHandler } from '../controller/interview.controller';
+import { createInterview, createSession, createSttGrant } from '../controller/interview.controller';
 
 const router = Router();
 
-router.post('/pre', preInterviewHandler);
-router.post('/:id/session', sessionHandler);
+router.post('/', createInterview);
+router.post('/:id/session', createSession);
+router.post('/:id/stt-grant', createSttGrant);
 
 export default router;
