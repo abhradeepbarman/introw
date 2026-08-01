@@ -4,6 +4,7 @@ import envConfig from '../config/env';
 import { prisma } from '../lib/prisma';
 import asyncHandler from '../utils/async-handler';
 import CustomErrorHandler from '../utils/custom-error-handler';
+import { evaluateInterview } from '../utils/evaluate-interview';
 import ResponseHandler from '../utils/response-handler';
 import { initSideband } from '../utils/sideband';
 
@@ -146,4 +147,44 @@ export const createSession = asyncHandler(async (req, res, next) => {
   await initSideband(callId, interview);
 
   return res.status(200).send(ResponseHandler(200, 'Session created successfully', { sdp }));
+});
+
+export const getInterviewResult = asyncHandler(async (req, res, next) => {
+  const { id: interviewId } = req.params as { id: string };
+
+  const interview = await prisma.interview.findUnique({
+    where: { id: interviewId },
+    include: { conversations: { orderBy: { createdAt: 'asc' } } },
+  });
+
+  if (!interview) {
+    return next(CustomErrorHandler.notFound('Interview not found'));
+  }
+
+  // already evaluated — don't pay for a second evaluation
+  if (interview.status === 'COMPLETED' && interview.feedback) {
+    return res.status(200).send(
+      ResponseHandler(200, 'Interview result', {
+        score: interview.score,
+        feedback: interview.feedback,
+      }),
+    );
+  }
+
+  if (interview.conversations.length === 0) {
+    return next(
+      CustomErrorHandler.badRequest('This interview has no conversation to evaluate yet'),
+    );
+  }
+
+  const { score, feedback } = await evaluateInterview(interview.conversations);
+
+  await prisma.interview.update({
+    where: { id: interviewId },
+    data: { score, feedback, status: 'COMPLETED' },
+  });
+
+  return res
+    .status(200)
+    .send(ResponseHandler(200, 'Interview evaluated successfully', { score, feedback }));
 });

@@ -7,7 +7,7 @@ import { Bot, Mic, MicOff, PhoneOff, User } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-type Status = 'idle' | 'connecting' | 'live' | 'ended' | 'error';
+type Status = 'idle' | 'connecting' | 'live' | 'error';
 type Turn = 'interviewer' | 'candidate' | 'silent';
 
 const FFT_SIZE = 1024;
@@ -149,9 +149,7 @@ const InterviewRoom = () => {
 
   const end = () => {
     teardown();
-    setStatus('ended');
-    setTurn('silent');
-    turnRef.current = 'silent';
+    navigate(`/interview/${interviewId}/result`);
   };
 
   useEffect(() => teardown, [teardown]);
@@ -160,7 +158,6 @@ const InterviewRoom = () => {
     idle: 'Your interviewer is ready when you are.',
     connecting: 'Connecting',
     live: muted ? 'Mic off' : turn === 'interviewer' ? 'Interviewer speaking' : 'Listening',
-    ended: 'Interview ended.',
     error: error ?? 'Something went wrong.',
   };
 
@@ -182,14 +179,6 @@ const InterviewRoom = () => {
             End interview
           </Button>
         </>
-      );
-    }
-
-    if (status === 'ended') {
-      return (
-        <Button type="button" onClick={() => navigate('/')} className={PRIMARY_BUTTON}>
-          Back to start
-        </Button>
       );
     }
 

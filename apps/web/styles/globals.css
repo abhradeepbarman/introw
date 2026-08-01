@@ -127,6 +127,16 @@
   --color-sidebar: var(--sidebar-background);
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-sweep: sweep 1.6s ease-in-out infinite;
+
+  @keyframes sweep {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(400%);
+    }
+  }
 
   @keyframes accordion-down {
     from {
