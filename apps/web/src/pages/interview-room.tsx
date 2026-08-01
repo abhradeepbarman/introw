@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ApiError } from '@/services/api-client';
-import { createSttGrant } from '@/services/interview.service';
+import { createSession } from '@/services/interview.service';
 import type { LucideIcon } from 'lucide-react';
 import { Bot, Mic, MicOff, PhoneOff, User } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -9,6 +9,18 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 type Status = 'idle' | 'connecting' | 'live' | 'ended' | 'error';
 type Turn = 'interviewer' | 'candidate' | 'silent';
+
+const FFT_SIZE = 1024;
+const SPEAKING_THRESHOLD = 0.02;
+const PRIMARY_BUTTON =
+  'bg-brand text-brand-foreground hover:bg-brand-hover focus-visible:ring-brand/40';
+
+const analyserFor = (context: AudioContext, stream: MediaStream) => {
+  const analyser = context.createAnalyser();
+  analyser.fftSize = FFT_SIZE;
+  context.createMediaStreamSource(stream).connect(analyser);
+  return analyser;
+};
 
 const InterviewRoom = () => {
   const { id: interviewId } = useParams();
@@ -21,24 +33,16 @@ const InterviewRoom = () => {
 
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const localAnalyserRef = useRef<AnalyserNode | null>(null);
   const remoteAnalyserRef = useRef<AnalyserNode | null>(null);
   const frameRef = useRef<number | null>(null);
   const turnRef = useRef<Turn>('silent');
-  const socketRef = useRef<WebSocket | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
 
   const teardown = useCallback(() => {
     if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
     frameRef.current = null;
-
-    if (recorderRef.current?.state !== 'inactive') recorderRef.current?.stop();
-    recorderRef.current = null;
-
-    socketRef.current?.close();
-    socketRef.current = null;
 
     micStreamRef.current?.getTracks().forEach((track) => track.stop());
     micStreamRef.current = null;
@@ -51,16 +55,11 @@ const InterviewRoom = () => {
     localAnalyserRef.current = null;
     remoteAnalyserRef.current = null;
 
-    if (audioRef.current) {
-      audioRef.current.srcObject = null;
-      audioRef.current = null;
-    }
+    if (audioRef.current) audioRef.current.srcObject = null;
   }, []);
 
   const startMeter = useCallback(() => {
-    const samples = new Float32Array(
-      (localAnalyserRef.current ?? remoteAnalyserRef.current)?.fftSize ?? 0,
-    );
+    const samples = new Float32Array(FFT_SIZE);
 
     const levelOf = (analyser: AnalyserNode | null) => {
       if (!analyser) return 0;
@@ -70,6 +69,7 @@ const InterviewRoom = () => {
       return Math.sqrt(total / samples.length);
     };
 
+    // rise instantly, decay slowly, so the indicator doesn't flicker between syllables
     const hold = (previous: number, level: number) =>
       level > previous ? level : previous * 0.9 + level * 0.1;
 
@@ -81,11 +81,10 @@ const InterviewRoom = () => {
       localLevel = hold(localLevel, levelOf(localAnalyserRef.current));
 
       let next: Turn = 'silent';
-      const SPEAKING_THRESHOLD = 0.02;
-
       if (Math.max(remoteLevel, localLevel) > SPEAKING_THRESHOLD) {
         next = remoteLevel >= localLevel ? 'interviewer' : 'candidate';
       }
+
       if (next !== turnRef.current) {
         turnRef.current = next;
         setTurn(next);
@@ -107,106 +106,28 @@ const InterviewRoom = () => {
       const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       micStreamRef.current = micStream;
 
+      const context = new AudioContext();
+      audioContextRef.current = context;
+      localAnalyserRef.current = analyserFor(context, micStream);
+
       const peer = new RTCPeerConnection();
       peerRef.current = peer;
 
-      const audio = document.createElement('audio');
-      audio.autoplay = true;
-      audioRef.current = audio;
-
-      const context = new AudioContext();
-      audioContextRef.current = context;
-
-      const localAnalyser = context.createAnalyser();
-      localAnalyser.fftSize = 1024;
-      context.createMediaStreamSource(micStream).connect(localAnalyser);
-      localAnalyserRef.current = localAnalyser;
-
       peer.ontrack = (event) => {
         const [remoteStream] = event.streams;
-        if (!remoteStream) return;
+        if (!remoteStream || !audioRef.current) return;
 
-        audio.srcObject = remoteStream;
-
-        const remoteAnalyser = context.createAnalyser();
-        remoteAnalyser.fftSize = 1024;
-        context.createMediaStreamSource(remoteStream).connect(remoteAnalyser);
-        remoteAnalyserRef.current = remoteAnalyser;
+        audioRef.current.srcObject = remoteStream;
+        remoteAnalyserRef.current = analyserFor(context, remoteStream);
       };
 
       micStream.getTracks().forEach((track) => peer.addTrack(track, micStream));
 
-      // const offer = await peer.createOffer();
-      // await peer.setLocalDescription(offer);
+      const offer = await peer.createOffer();
+      await peer.setLocalDescription(offer);
 
-      // const { sdp } = await createSession(interviewId, offer.sdp ?? '');
-      // await peer.setRemoteDescription({ type: 'answer', sdp });
-
-      const { access_token } = await createSttGrant(interviewId);
-      const socket = new WebSocket(
-        'wss://api.deepgram.com/v1/listen?' +
-          new URLSearchParams({
-            model: 'nova-3',
-            language: 'en-US',
-            interim_results: 'true',
-            punctuate: 'true',
-            smart_format: 'true',
-            endpointing: '300',
-            vad_events: 'true',
-          }),
-        ['bearer', access_token],
-      );
-      socketRef.current = socket;
-
-      await new Promise((resolve, reject) => {
-        socket.onopen = resolve;
-        socket.onerror = () => reject(new Error('Transcription socket failed to open'));
-      });
-
-      socket.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-
-        switch (message.type) {
-          case 'Results':
-            console.log(
-              message.channel.alternatives[0].transcript,
-              message.is_final,
-              message.speech_final,
-            );
-            break;
-
-          case 'SpeechStarted':
-            console.log('Speech started');
-            break;
-
-          case 'UtteranceEnd':
-            console.log('Utterance ended');
-            break;
-
-          case 'Metadata':
-            console.log(message);
-            break;
-        }
-      };
-
-      socket.onerror = (err) => {
-        console.error(err);
-      };
-
-      socket.onclose = (event) => {
-        console.log('Closed', event.code, event.reason);
-      };
-
-      const recorder = new MediaRecorder(micStream, { mimeType: 'audio/webm;codecs=opus' });
-      recorderRef.current = recorder;
-
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0 && socket.readyState === WebSocket.OPEN) {
-          socket.send(event.data);
-        }
-      };
-      // Deepgram drops a socket that goes ~12s without audio, so keep chunks small.
-      recorder.start(250);
+      const { sdp } = await createSession(interviewId, offer.sdp ?? '');
+      await peer.setRemoteDescription({ type: 'answer', sdp });
 
       setStatus('live');
       startMeter();
@@ -214,16 +135,7 @@ const InterviewRoom = () => {
       console.error('Failed to join interview room:', cause);
       teardown();
       setStatus('error');
-
-      if (cause instanceof DOMException && cause.name === 'NotAllowedError') {
-        setError('Microphone access is blocked. Allow it in your browser, then try again.');
-        return;
-      }
-      setError(
-        cause instanceof ApiError
-          ? cause.message
-          : 'Could not start the session. Check your connection and try again.',
-      );
+      setError(describeError(cause));
     }
   }, [interviewId, startMeter, teardown]);
 
@@ -252,8 +164,56 @@ const InterviewRoom = () => {
     error: error ?? 'Something went wrong.',
   };
 
+  const renderControls = () => {
+    if (status === 'live') {
+      return (
+        <>
+          <Button type="button" variant="outline" onClick={toggleMute} aria-pressed={muted}>
+            {muted ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+            {muted ? 'Unmute' : 'Mute'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={end}
+            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+          >
+            <PhoneOff className="size-4" />
+            End interview
+          </Button>
+        </>
+      );
+    }
+
+    if (status === 'ended') {
+      return (
+        <Button type="button" onClick={() => navigate('/')} className={PRIMARY_BUTTON}>
+          Back to start
+        </Button>
+      );
+    }
+
+    return (
+      <Button
+        type="button"
+        disabled={status === 'connecting'}
+        onClick={() => void join()}
+        className={PRIMARY_BUTTON}
+      >
+        <Mic className="size-4" />
+        {status === 'connecting'
+          ? 'Connecting'
+          : status === 'error'
+            ? 'Try again'
+            : 'Start interview'}
+      </Button>
+    );
+  };
+
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
+      <audio ref={audioRef} autoPlay className="hidden" />
+
       <div className="flex items-center gap-12 sm:gap-20">
         <Seat icon={Bot} name="Interviewer" speaking={turn === 'interviewer'} />
         <Seat icon={User} name="You" speaking={turn === 'candidate'} muted={muted} />
@@ -266,49 +226,17 @@ const InterviewRoom = () => {
         {statusLine[status]}
       </p>
 
-      <div className="mt-8 flex items-center gap-3">
-        {status === 'live' ? (
-          <>
-            <Button type="button" variant="outline" onClick={toggleMute} aria-pressed={muted}>
-              {muted ? <MicOff className="size-4" /> : <Mic className="size-4" />}
-              {muted ? 'Unmute' : 'Mute'}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={end}
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-            >
-              <PhoneOff className="size-4" />
-              End interview
-            </Button>
-          </>
-        ) : status === 'ended' ? (
-          <Button
-            type="button"
-            onClick={() => navigate('/')}
-            className="bg-brand text-brand-foreground hover:bg-brand-hover focus-visible:ring-brand/40"
-          >
-            Back to start
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            disabled={status === 'connecting'}
-            onClick={() => void join()}
-            className="bg-brand text-brand-foreground hover:bg-brand-hover focus-visible:ring-brand/40"
-          >
-            <Mic className="size-4" />
-            {status === 'connecting'
-              ? 'Connecting'
-              : status === 'error'
-                ? 'Try again'
-                : 'Start interview'}
-          </Button>
-        )}
-      </div>
+      <div className="mt-8 flex items-center gap-3">{renderControls()}</div>
     </main>
   );
+};
+
+const describeError = (cause: unknown) => {
+  if (cause instanceof DOMException && cause.name === 'NotAllowedError') {
+    return 'Microphone access is blocked. Allow it in your browser, then try again.';
+  }
+  if (cause instanceof ApiError) return cause.message;
+  return 'Could not start the session. Check your connection and try again.';
 };
 
 type SeatProps = {

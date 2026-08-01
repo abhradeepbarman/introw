@@ -1,34 +1,86 @@
-import axios from 'axios';
-import asyncHandler from '../utils/async-handler';
 import { interviewSourcesSchema } from '@repo/common/validations';
+import axios from 'axios';
 import envConfig from '../config/env';
 import { prisma } from '../lib/prisma';
-import ResponseHandler from '../utils/response-handler';
+import asyncHandler from '../utils/async-handler';
 import CustomErrorHandler from '../utils/custom-error-handler';
+import ResponseHandler from '../utils/response-handler';
 import { initSideband } from '../utils/sideband';
-import { logger } from '../utils/logger';
+
+type GithubRepo = {
+  name: string;
+  description: string | null;
+  language: string | null;
+  fork?: boolean;
+  archived?: boolean;
+};
 
 export const createInterview = asyncHandler(async (req, res) => {
   const { githubUrl } = interviewSourcesSchema.parse(req.body);
   const githubUsername = githubUrl.replace(/\/+$/, '').split('/').pop();
-  const githubApiUrl = `https://api.github.com/users/${githubUsername}/repos`;
 
-  const response = await axios.get(githubApiUrl, {
-    proxy: {
-      protocol: 'http',
-      host: envConfig.CRAWLBASE_PROXY_HOST,
-      port: envConfig.CRAWLBASE_PROXY_PORT,
-      auth: {
-        username: envConfig.CRAWLBASE_PROXY_KEY,
-        password: '',
+  if (!githubUsername) {
+    return res.status(400).send(ResponseHandler(400, 'Invalid GitHub URL', null));
+  }
+
+  const githubApiUrl = `https://api.github.com/users/${encodeURIComponent(githubUsername)}/repos`;
+
+  let response;
+  try {
+    response = await axios.get<GithubRepo[]>(githubApiUrl, {
+      params: {
+        per_page: 100,
+        sort: 'pushed',
+        direction: 'desc',
+        type: 'owner',
       },
-    },
-  });
+      headers: {
+        Accept: 'application/vnd.github+json',
+      },
+      timeout: 15000,
+      proxy: {
+        protocol: 'http',
+        host: envConfig.CRAWLBASE_PROXY_HOST,
+        port: envConfig.CRAWLBASE_PROXY_PORT,
+        auth: {
+          username: envConfig.CRAWLBASE_PROXY_KEY,
+          password: '',
+        },
+      },
+    });
+  } catch (err: any) {
+    if (err.response?.status === 404) {
+      return res.status(404).send(ResponseHandler(404, 'GitHub user not found', null));
+    }
+    if (err.response?.status === 403 || err.response?.status === 429) {
+      return res
+        .status(429)
+        .send(ResponseHandler(429, 'GitHub rate limit exceeded, try again shortly', null));
+    }
+    throw err;
+  }
 
-  // res.json({ data: response.data });
+  const raw = Array.isArray(response.data) ? response.data : [];
+
+  // Store only what an interviewer can ask about — 3 fields, 8 repos.
+  const githubMetadata = raw
+    .filter((r) => !r.fork && !r.archived && (r.description || r.language))
+    .slice(0, 8)
+    .map((r) => ({
+      name: r.name,
+      language: r.language,
+      description: r.description?.slice(0, 120) ?? null,
+    }));
+
+  if (githubMetadata.length === 0) {
+    return res
+      .status(422)
+      .send(ResponseHandler(422, 'No suitable public repositories found for this user', null));
+  }
+
   const newInterview = await prisma.interview.create({
     data: {
-      githubMetadata: response.data,
+      githubMetadata,
     },
   });
 
@@ -39,13 +91,26 @@ export const createInterview = asyncHandler(async (req, res) => {
   );
 });
 
-const sessionConfig = JSON.stringify({
+const sessionConfig = {
   type: 'realtime',
   model: 'gpt-realtime-2.1',
+  instructions: `You are an AI interviewer conducting a technical interview.`,
   audio: {
-    output: { voice: 'marin' },
+    input: {
+      turn_detection: {
+        type: 'server_vad',
+      },
+      transcription: {
+        model: 'gpt-4o-mini-transcribe',
+        language: 'en',
+        prompt: 'Technical software engineering interview.',
+      },
+    },
+    output: {
+      voice: 'marin',
+    },
   },
-});
+};
 
 export const createSession = asyncHandler(async (req, res, next) => {
   const { id: interviewId } = req.params as { id: string };
@@ -60,7 +125,7 @@ export const createSession = asyncHandler(async (req, res, next) => {
 
   const fd = new FormData();
   fd.set('sdp', req.body);
-  fd.set('session', sessionConfig);
+  fd.set('session', JSON.stringify(sessionConfig));
 
   const sdpResponse = await fetch('https://api.openai.com/v1/realtime/calls', {
     method: 'POST',
@@ -71,7 +136,6 @@ export const createSession = asyncHandler(async (req, res, next) => {
     },
     body: fd,
   });
-  // Send back the SDP we received from the OpenAI REST API
   const sdp = await sdpResponse.text();
 
   const location = sdpResponse.headers.get('Location');
@@ -79,39 +143,7 @@ export const createSession = asyncHandler(async (req, res, next) => {
 
   if (!callId) return next(CustomErrorHandler.notAllowed('Call ID not found in response'));
 
-  await initSideband(callId, interviewId);
+  await initSideband(callId, interview);
 
   return res.status(200).send(ResponseHandler(200, 'Session created successfully', { sdp }));
-});
-
-export const createSttGrant = asyncHandler(async (req, res, next) => {
-  const { id: interviewId } = req.params as { id: string };
-
-  const interview = await prisma.interview.findUnique({
-    where: { id: interviewId },
-  });
-
-  if (!interview) {
-    return next(CustomErrorHandler.notFound('Interview not found'));
-  }
-
-  const response = await fetch('https://api.deepgram.com/v1/auth/grant', {
-    method: 'POST',
-    headers: {
-      Authorization: `Token ${envConfig.DEEPGRAM_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    // Defaults to 30s, which is tight if the caller stalls before opening the socket.
-    body: JSON.stringify({ ttl_seconds: 300 }),
-  });
-  const data = await response.json();
-
-  // Without this a failed grant still returns 200 with no access_token,
-  // and the only symptom is an opaque WebSocket handshake failure.
-  if (!response.ok) {
-    logger.error('Deepgram STT grant failed', { status: response.status, data });
-    return next(CustomErrorHandler.serverError('Could not create a speech-to-text grant'));
-  }
-
-  return res.status(200).send(ResponseHandler(200, 'STT grant created successfully', data));
 });
