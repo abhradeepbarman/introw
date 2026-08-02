@@ -8,6 +8,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { UserNav } from '@/components/auth/user-nav';
+import { useAuth } from '@/context/auth-context';
 import { cn } from '@/lib/utils';
 import { ApiError } from '@/services/api-client';
 import { createInterview } from '@/services/interview.service';
@@ -21,7 +23,7 @@ import type { LucideIcon } from 'lucide-react';
 import { ArrowRight, Github } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 type SourceRowProps = {
   icon: LucideIcon;
@@ -58,12 +60,21 @@ const StartInterviewPage = () => {
     defaultValues: { githubUrl: '' },
   });
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
 
   const values = form.watch();
   const githubReady = githubUrlSchema.safeParse(values.githubUrl).success;
 
   const onSubmit = async (sources: InterviewSources) => {
     form.clearErrors('root');
+
+    // Guests can fill the form, but the interview itself needs an account —
+    // send them to sign in and return them here afterwards.
+    if (!user) {
+      navigate('/login', { state: { from: location } });
+      return;
+    }
 
     try {
       const { id } = await createInterview(sources);
@@ -88,9 +99,7 @@ const StartInterviewPage = () => {
       <div className="mx-auto flex min-h-dvh max-w-6xl flex-col px-6">
         <header className="flex items-center justify-between py-6">
           <span className="text-sm font-semibold tracking-tight">intervue</span>
-          <span className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-muted-foreground">
-            Session setup
-          </span>
+          <UserNav />
         </header>
 
         <div className="grid flex-1 items-center gap-14 pb-16 pt-6 lg:grid-cols-[1.05fr_minmax(0,25rem)] lg:gap-20 lg:pb-24">
@@ -169,7 +178,11 @@ const StartInterviewPage = () => {
                     disabled={form.formState.isSubmitting}
                     className="h-12 w-full bg-brand text-brand-foreground hover:bg-brand-hover focus-visible:ring-brand/40"
                   >
-                    {form.formState.isSubmitting ? 'Starting' : 'Start interview'}
+                    {form.formState.isSubmitting
+                      ? 'Starting'
+                      : user
+                        ? 'Start interview'
+                        : 'Sign in to start'}
                     <ArrowRight className="size-4" />
                   </Button>
                   <p

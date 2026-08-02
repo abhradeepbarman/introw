@@ -7,6 +7,10 @@
     "./validations": {
       "import": "./src/validations/index.ts",
       "require": "./src/validations/index.ts"
+    },
+    "./types": {
+      "import": "./src/types/index.ts",
+      "require": "./src/types/index.ts"
     }
   },
   "scripts": {

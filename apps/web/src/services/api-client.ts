@@ -44,8 +44,31 @@ const toFieldErrors = (data: unknown): ApiFieldError[] => {
   });
 };
 
-export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${envConfig.API_BASE_URL}${path}`, {
+const REFRESH_PATH = '/auth/refresh';
+
+let refreshInFlight: Promise<boolean> | null = null;
+
+/**
+ * Access tokens are short-lived, so a 401 is usually just an expired cookie.
+ * Concurrent callers share one refresh so a page load does not fire several.
+ */
+const refreshSession = () => {
+  refreshInFlight ??= fetch(`${envConfig.API_BASE_URL}${REFRESH_PATH}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+  })
+    .then((response) => response.ok)
+    .catch(() => false)
+    .finally(() => {
+      refreshInFlight = null;
+    });
+
+  return refreshInFlight;
+};
+
+const send = (path: string, init?: RequestInit) =>
+  fetch(`${envConfig.API_BASE_URL}${path}`, {
     credentials: 'include',
     ...init,
     headers: {
@@ -53,6 +76,13 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
       ...init?.headers,
     },
   });
+
+export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  let response = await send(path, init);
+
+  if (response.status === 401 && path !== REFRESH_PATH && (await refreshSession())) {
+    response = await send(path, init);
+  }
 
   const body: unknown = await response.json().catch(() => null);
 

@@ -7,6 +7,31 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id             String          @id @default(uuid())
+  name           String
+  email          String          @unique
+  password       String?
+  authProvider   AuthProvider    @default(LOCAL)
+  credits        Int             @default(3)
+  refreshToken   String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  passwordTokens PasswordToken[]
+}
+
+model PasswordToken {
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
 model Interview {
   id             String          @id @default(uuid())
   githubMetadata Json
@@ -24,6 +49,11 @@ model Message {
   createdBy   UserType
   interview   Interview @relation(fields: [interviewId], references: [id])
   createdAt   DateTime  @default(now())
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
 }
 
 enum UserType {

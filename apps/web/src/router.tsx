@@ -1,24 +1,47 @@
-import InterviewResultPage from '@/pages/result';
+import { GuestRoute, ProtectedRoute } from '@/components/auth/route-guards';
+import { AuthProvider } from '@/context/auth-context';
+import ForgotPasswordPage from '@/pages/auth/forgot-password';
+import GoogleCallbackPage from '@/pages/auth/google-callback';
+import LoginPage from '@/pages/auth/login';
+import RegisterPage from '@/pages/auth/register';
+import ResetPasswordPage from '@/pages/auth/reset-password';
+import InterviewRoom from '@/pages/interview/interview-room';
+import InterviewResultPage from '@/pages/interview/result';
+import StartInterviewPage from '@/pages/interview/start-interview';
 import NotFoundPage from '@/pages/not-found';
-import StartInterviewPage from '@/pages/start-interview';
-import { createBrowserRouter } from 'react-router-dom';
-import InterviewRoom from './pages/interview-room';
+import { createBrowserRouter, Outlet } from 'react-router-dom';
+
+const RootLayout = () => (
+  <AuthProvider>
+    <Outlet />
+  </AuthProvider>
+);
 
 export const router = createBrowserRouter([
   {
-    path: '/',
-    element: <StartInterviewPage />,
-  },
-  {
-    path: '/interview/:id',
-    element: <InterviewRoom />,
-  },
-  {
-    path: '/interview/:id/result',
-    element: <InterviewResultPage />,
-  },
-  {
-    path: '*',
-    element: <NotFoundPage />,
+    element: <RootLayout />,
+    children: [
+      // Open to everyone — signed-in visitors get their profile and credits
+      // in the header instead of being redirected.
+      { path: '/', element: <StartInterviewPage /> },
+      { path: '/auth/google-callback', element: <GoogleCallbackPage /> },
+      {
+        element: <GuestRoute />,
+        children: [
+          { path: '/login', element: <LoginPage /> },
+          { path: '/register', element: <RegisterPage /> },
+          { path: '/forgot-password', element: <ForgotPasswordPage /> },
+          { path: '/reset-password/:token', element: <ResetPasswordPage /> },
+        ],
+      },
+      {
+        element: <ProtectedRoute />,
+        children: [
+          { path: '/interview/:id', element: <InterviewRoom /> },
+          { path: '/interview/:id/result', element: <InterviewResultPage /> },
+        ],
+      },
+      { path: '*', element: <NotFoundPage /> },
+    ],
   },
 ]);
