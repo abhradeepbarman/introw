@@ -69,8 +69,6 @@ const StartInterviewPage = () => {
   const onSubmit = async (sources: InterviewSources) => {
     form.clearErrors('root');
 
-    // Guests can fill the form, but the interview itself needs an account —
-    // send them to sign in and return them here afterwards.
     if (!user) {
       navigate('/login', { state: { from: location } });
       return;

@@ -146,8 +146,6 @@ export const refreshAccessToken = asyncHandler(
 
     const userDetails = await prisma.user.findUnique({ where: { id: decoded.id } });
 
-    // A refresh token that no longer matches the stored digest was rotated or
-    // revoked — treat it as a replay and refuse.
     if (!userDetails?.refreshToken || userDetails.refreshToken !== hashToken(token)) {
       return next(CustomErrorHandler.unAuthorized());
     }
@@ -166,8 +164,6 @@ export const sendForgotPasswordEmail = asyncHandler(async (req: Request, res: Re
   const { email: rawEmail } = forgotPasswordSchema.parse(req.body);
   const email = normalizeEmail(rawEmail);
 
-  // Always the same response, so the endpoint cannot be used to discover which
-  // emails have accounts.
   const genericResponse = () =>
     res
       .status(200)
@@ -222,7 +218,6 @@ export const resetPassword = asyncHandler(
 
     const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-    // Resetting a password signs every existing session out.
     await prisma.$transaction([
       prisma.user.update({
         where: { id: existingToken.userId },
@@ -266,8 +261,6 @@ export const googleLogin = asyncHandler(
 export const googleCallback = asyncHandler(async (req: Request, res: Response) => {
   const { maxAge: _ignored, ...stateCookieOptions } = cookieOptions(OAUTH_STATE_MAX_AGE);
 
-  // The browser lands here, so failures redirect back to the UI rather than
-  // rendering a JSON error on the API domain.
   const failRedirect = (reason: string) =>
     res.redirect(`${envConfig.APP_URL}/login?error=${encodeURIComponent(reason)}`);
 

@@ -1,4 +1,5 @@
 import type { InterviewSources, Rubric } from '@repo/common/validations';
+import envConfig from '../config/env';
 import { apiPost, apiRequest } from './api-client';
 
 export type CreateInterviewResponse = {
@@ -12,8 +13,14 @@ export type SessionResponse = {
 export type InterviewResult = {
   score: number;
   feedback: string;
-  /** null for interviews scored before the rubric breakdown existed */
   rubric: Rubric | null;
+  transcript: TranscriptLine[];
+};
+
+export type TranscriptLine = {
+  speaker: 'CANDIDATE' | 'INTERVIEWER';
+  message: string;
+  at: string;
 };
 
 export const createInterview = (sources: InterviewSources) =>
@@ -28,3 +35,6 @@ export const createSession = (interviewId: string, offerSdp: string) =>
 
 export const getInterviewResult = (interviewId: string) =>
   apiRequest<InterviewResult>(`/interviews/${interviewId}/result`, { method: 'POST' });
+
+export const transcriptDownloadUrl = (interviewId: string) =>
+  `${envConfig.API_BASE_URL}/interviews/${interviewId}/transcript`;

@@ -1,8 +1,13 @@
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/services/api-client';
-import { getInterviewResult, type InterviewResult } from '@/services/interview.service';
+import {
+  getInterviewResult,
+  transcriptDownloadUrl,
+  type InterviewResult,
+  type TranscriptLine,
+} from '@/services/interview.service';
 import { DIMENSION_KEYS, DIMENSIONS, type Dimension, type Rubric } from '@repo/common/validations';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -126,6 +131,68 @@ function Breakdown({ rubric }: { rubric: Rubric }) {
   );
 }
 
+const SPEAKER_LABEL: Record<TranscriptLine['speaker'], string> = {
+  CANDIDATE: 'You',
+  INTERVIEWER: 'Interviewer',
+};
+
+const FOOTER_ACTION =
+  'flex h-12 items-center justify-center gap-2 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/40 [&_svg]:size-3.5';
+
+function Transcript({
+  transcript,
+  interviewId,
+}: {
+  transcript: TranscriptLine[];
+  interviewId: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  if (transcript.length === 0) return null;
+
+  return (
+    <div className="border-t border-border">
+      <div className="grid grid-cols-2 divide-x divide-border">
+        <button
+          type="button"
+          onClick={() => setOpen((wasOpen) => !wasOpen)}
+          aria-expanded={open}
+          aria-controls="transcript-lines"
+          className={FOOTER_ACTION}
+        >
+          {open ? <ChevronUp /> : <ChevronDown />}
+          {open ? 'Hide transcript' : 'View transcript'}
+        </button>
+
+        <a href={transcriptDownloadUrl(interviewId)} download className={FOOTER_ACTION}>
+          <Download />
+          Download
+        </a>
+      </div>
+
+      {open && (
+        <ul
+          id="transcript-lines"
+          className="max-h-96 space-y-5 overflow-y-auto border-t border-border px-6 py-5"
+        >
+          {transcript.map((line, index) => (
+            <li key={`${line.at}-${index}`} className="space-y-1">
+              <p
+                className={`font-mono text-[0.625rem] uppercase tracking-[0.14em] ${
+                  line.speaker === 'CANDIDATE' ? 'text-brand' : 'text-muted-foreground'
+                }`}
+              >
+                {SPEAKER_LABEL[line.speaker]}
+              </p>
+              <p className="text-sm leading-relaxed">{line.message}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function ResultCard({ status, children }: { status: string; children: ReactNode }) {
   return (
     <section className="w-full overflow-hidden rounded-xl border border-border bg-card shadow-sm">
@@ -189,7 +256,15 @@ function PendingResult() {
   );
 }
 
-function ScoredResult({ result, onRestart }: { result: InterviewResult; onRestart: () => void }) {
+function ScoredResult({
+  result,
+  interviewId,
+  onRestart,
+}: {
+  result: InterviewResult;
+  interviewId: string;
+  onRestart: () => void;
+}) {
   return (
     <ResultCard status={bandFor(result.score)}>
       <div className="px-6 pb-5">
@@ -225,6 +300,8 @@ function ScoredResult({ result, onRestart }: { result: InterviewResult; onRestar
           <ArrowRight className="size-4" />
         </Button>
       </div>
+
+      <Transcript transcript={result.transcript} interviewId={interviewId} />
     </ResultCard>
   );
 }
@@ -280,7 +357,7 @@ const InterviewResultPage = () => {
               </Button>
             </section>
           ) : result ? (
-            <ScoredResult result={result} onRestart={goHome} />
+            <ScoredResult result={result} interviewId={interviewId ?? ''} onRestart={goHome} />
           ) : (
             <PendingResult />
           )}

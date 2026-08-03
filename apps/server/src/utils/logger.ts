@@ -13,7 +13,6 @@ export const logger = winston.createLogger({
   level: isProduction ? 'info' : 'debug',
   format: winston.format.combine(
     winston.format.timestamp(),
-    // Unwraps Error instances so stack traces survive into the output.
     winston.format.errors({ stack: true }),
     isProduction ? winston.format.json() : devFormat,
   ),

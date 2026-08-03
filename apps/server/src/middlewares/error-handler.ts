@@ -6,8 +6,6 @@ import { formatError } from '../utils/format-error';
 import { logger } from '../utils/logger';
 import ResponseHandler from '../utils/response-handler';
 
-// Express detects error middleware by arity: all four params are required,
-// even though `_next` is unused.
 const errorHandler = (err: Error, req: Request, res: Response, _next: NextFunction) => {
   let statusCode = 500;
   let message: string = 'Internal server error';

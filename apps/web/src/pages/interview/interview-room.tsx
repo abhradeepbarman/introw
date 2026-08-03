@@ -69,7 +69,6 @@ const InterviewRoom = () => {
       return Math.sqrt(total / samples.length);
     };
 
-    // rise instantly, decay slowly, so the indicator doesn't flicker between syllables
     const hold = (previous: number, level: number) =>
       level > previous ? level : previous * 0.9 + level * 0.1;
 

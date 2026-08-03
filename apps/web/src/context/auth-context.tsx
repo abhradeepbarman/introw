@@ -27,8 +27,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Cookies are httpOnly, so the only way to know whether a session survived a
-  // reload is to ask the server.
   useEffect(() => {
     refreshUser().finally(() => setIsLoading(false));
   }, [refreshUser]);

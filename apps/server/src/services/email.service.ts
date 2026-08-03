@@ -26,8 +26,6 @@ const getTransporter = () => {
 export const sendEmail = async ({ to, subject, body }: SendEmailInput) => {
   const mailer = getTransporter();
 
-  // Without SMTP configured the reset flow still has to succeed, so log the
-  // mail instead of failing the request.
   if (!mailer) {
     logger.warn(`SMTP is not configured — skipped email "${subject}" to ${to}`);
     return;

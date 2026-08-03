@@ -63,7 +63,6 @@ export const createInterview = asyncHandler(async (req, res) => {
 
   const raw = Array.isArray(response.data) ? response.data : [];
 
-  // Store only what an interviewer can ask about — 3 fields, 8 repos.
   const githubMetadata = raw
     .filter((r) => !r.fork && !r.archived && (r.description || r.language))
     .slice(0, 8)
@@ -115,6 +114,7 @@ const sessionConfig = {
 
 export const createSession = asyncHandler(async (req, res, next) => {
   const { id: interviewId } = req.params as { id: string };
+  const { id: userId } = req.user;
 
   const interview = await prisma.interview.findUnique({
     where: { id: interviewId },
@@ -132,8 +132,7 @@ export const createSession = asyncHandler(async (req, res, next) => {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${envConfig.OPENAI_API_KEY}`,
-      // TODO: add hashed user id to the request header for safety check when auth added
-      // 'OpenAI-Safety-Identifier': 'hashed-user-id',
+      'OpenAI-Safety-Identifier': `intervue-${userId}`,
     },
     body: fd,
   });
@@ -149,6 +148,43 @@ export const createSession = asyncHandler(async (req, res, next) => {
   return res.status(200).send(ResponseHandler(200, 'Session created successfully', { sdp }));
 });
 
+export const downloadTranscript = asyncHandler(async (req, res, next) => {
+  const { id: interviewId } = req.params as { id: string };
+
+  const interview = await prisma.interview.findUnique({
+    where: { id: interviewId },
+    include: { conversations: { orderBy: { createdAt: 'asc' } } },
+  });
+
+  if (!interview) {
+    return next(CustomErrorHandler.notFound('Interview not found'));
+  }
+
+  if (interview.conversations.length === 0) {
+    return next(CustomErrorHandler.badRequest('This interview has no conversation to download'));
+  }
+
+  const lines = interview.conversations.map(
+    (m) => `${m.createdBy === 'CANDIDATE' ? 'Candidate' : 'Interviewer'}: ${m.message}`,
+  );
+
+  const header = [
+    'Intervue — interview transcript',
+    `Interview: ${interview.id}`,
+    `Date: ${interview.createdAt.toISOString()}`,
+  ].join('\n');
+
+  const file = `${header}\n\n${lines.join('\n\n')}\n`;
+
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="intervue-transcript-${interview.id}.txt"`,
+  );
+
+  return res.status(200).send(file);
+});
+
 export const getInterviewResult = asyncHandler(async (req, res, next) => {
   const { id: interviewId } = req.params as { id: string };
 
@@ -161,6 +197,12 @@ export const getInterviewResult = asyncHandler(async (req, res, next) => {
     return next(CustomErrorHandler.notFound('Interview not found'));
   }
 
+  const transcript = interview.conversations.map((m) => ({
+    speaker: m.createdBy,
+    message: m.message,
+    at: m.createdAt,
+  }));
+
   if (interview.status === 'COMPLETED' && interview.feedback) {
     const stored = rubricSchema.safeParse(interview.rubric);
 
@@ -169,6 +211,7 @@ export const getInterviewResult = asyncHandler(async (req, res, next) => {
         score: interview.score,
         feedback: interview.feedback,
         rubric: stored.success ? stored.data : null,
+        transcript,
       }),
     );
   }
@@ -186,7 +229,12 @@ export const getInterviewResult = asyncHandler(async (req, res, next) => {
     data: { score, feedback, rubric, status: 'COMPLETED' },
   });
 
-  return res
-    .status(200)
-    .send(ResponseHandler(200, 'Interview evaluated successfully', { score, feedback, rubric }));
+  return res.status(200).send(
+    ResponseHandler(200, 'Interview evaluated successfully', {
+      score,
+      feedback,
+      rubric,
+      transcript,
+    }),
+  );
 });
