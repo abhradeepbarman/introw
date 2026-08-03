@@ -1,3 +1,4 @@
+import { AppHeader } from '@/components/app-header';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ApiError } from '@/services/api-client';
@@ -199,23 +200,27 @@ const InterviewRoom = () => {
   };
 
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
-      <audio ref={audioRef} autoPlay className="hidden" />
+    <>
+      <AppHeader brandTo={null} eyebrow="Interview room" />
 
-      <div className="flex items-center gap-12 sm:gap-20">
-        <Seat icon={Bot} name="Interviewer" speaking={turn === 'interviewer'} />
-        <Seat icon={User} name="You" speaking={turn === 'candidate'} muted={muted} />
-      </div>
+      <main className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center px-6 text-center">
+        <audio ref={audioRef} autoPlay className="hidden" />
 
-      <p
-        className="mt-12 text-sm text-muted-foreground"
-        role={status === 'error' ? 'alert' : 'status'}
-      >
-        {statusLine[status]}
-      </p>
+        <div className="flex items-center gap-12 sm:gap-20">
+          <Seat icon={Bot} name="Interviewer" speaking={turn === 'interviewer'} />
+          <Seat icon={User} name="You" speaking={turn === 'candidate'} muted={muted} />
+        </div>
 
-      <div className="mt-8 flex items-center gap-3">{renderControls()}</div>
-    </main>
+        <p
+          className="mt-12 text-sm text-muted-foreground"
+          role={status === 'error' ? 'alert' : 'status'}
+        >
+          {statusLine[status]}
+        </p>
+
+        <div className="mt-8 flex items-center gap-3">{renderControls()}</div>
+      </main>
+    </>
   );
 };
 

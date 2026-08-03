@@ -95,6 +95,33 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
   return (isEnvelope(body) ? body.data : body) as T;
 }
 
+const filenameFrom = (disposition: string | null) =>
+  disposition?.match(/filename="?([^";]+)"?/i)?.[1];
+
+export async function downloadFile(path: string, fallbackName: string): Promise<void> {
+  let response = await send(path, { method: 'GET' });
+
+  if (response.status === 401 && (await refreshSession())) {
+    response = await send(path, { method: 'GET' });
+  }
+
+  if (!response.ok) {
+    const body: unknown = await response.json().catch(() => null);
+    const message = isEnvelope(body) ? body.message : `Download failed (${response.status})`;
+    throw new ApiError(response.status, message);
+  }
+
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filenameFrom(response.headers.get('Content-Disposition')) ?? fallbackName;
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export const apiPost = <T>(path: string, payload: unknown) =>
   apiRequest<T>(path, { method: 'POST', body: JSON.stringify(payload) });
 

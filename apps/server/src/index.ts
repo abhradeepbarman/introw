@@ -14,6 +14,7 @@ app.use(
   cors({
     origin: [envConfig.APP_URL],
     credentials: true,
+    exposedHeaders: ['Content-Disposition'],
   }),
 );
 app.use(express.json({ limit: '1mb' }));

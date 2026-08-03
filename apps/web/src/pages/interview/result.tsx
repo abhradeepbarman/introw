@@ -1,8 +1,11 @@
+import { AppHeader, BackLink } from '@/components/app-header';
+import { UserNav } from '@/components/auth/user-nav';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/services/api-client';
 import {
+  downloadReport,
+  downloadTranscript,
   getInterviewResult,
-  transcriptDownloadUrl,
   type InterviewResult,
   type TranscriptLine,
 } from '@/services/interview.service';
@@ -137,9 +140,9 @@ const SPEAKER_LABEL: Record<TranscriptLine['speaker'], string> = {
 };
 
 const FOOTER_ACTION =
-  'flex h-12 items-center justify-center gap-2 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/40 [&_svg]:size-3.5';
+  'flex h-12 items-center justify-center gap-2 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/40 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-3.5';
 
-function Transcript({
+function ResultFooter({
   transcript,
   interviewId,
 }: {
@@ -147,12 +150,29 @@ function Transcript({
   interviewId: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState<'report' | 'transcript' | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   if (transcript.length === 0) return null;
 
+  const run = async (kind: 'report' | 'transcript') => {
+    setBusy(kind);
+    setError(null);
+
+    try {
+      await (kind === 'report' ? downloadReport(interviewId) : downloadTranscript(interviewId));
+    } catch (cause) {
+      setError(
+        cause instanceof ApiError ? cause.message : 'Could not download the file. Try again.',
+      );
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="border-t border-border">
-      <div className="grid grid-cols-2 divide-x divide-border">
+      <div className="grid divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
         <button
           type="button"
           onClick={() => setOpen((wasOpen) => !wasOpen)}
@@ -164,11 +184,32 @@ function Transcript({
           {open ? 'Hide transcript' : 'View transcript'}
         </button>
 
-        <a href={transcriptDownloadUrl(interviewId)} download className={FOOTER_ACTION}>
+        <button
+          type="button"
+          onClick={() => run('report')}
+          disabled={busy !== null}
+          className={FOOTER_ACTION}
+        >
           <Download />
-          Download
-        </a>
+          {busy === 'report' ? 'Preparing' : 'Report'}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => run('transcript')}
+          disabled={busy !== null}
+          className={FOOTER_ACTION}
+        >
+          <Download />
+          {busy === 'transcript' ? 'Preparing' : 'Transcript'}
+        </button>
       </div>
+
+      {error && (
+        <p className="border-t border-border px-6 py-3 text-center text-xs text-destructive" role="alert">
+          {error}
+        </p>
+      )}
 
       {open && (
         <ul
@@ -301,7 +342,7 @@ function ScoredResult({
         </Button>
       </div>
 
-      <Transcript transcript={result.transcript} interviewId={interviewId} />
+      <ResultFooter transcript={result.transcript} interviewId={interviewId} />
     </ResultCard>
   );
 }
@@ -334,15 +375,12 @@ const InterviewResultPage = () => {
 
   return (
     <main className="min-h-dvh">
-      <div className="mx-auto flex min-h-dvh max-w-2xl flex-col px-6">
-        <header className="flex items-center justify-between py-6">
-          <span className="text-sm font-semibold tracking-tight">intervue</span>
-          <span className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-muted-foreground">
-            Result
-          </span>
-        </header>
+      <AppHeader right={<UserNav />} />
 
-        <div className="flex flex-1 items-center pb-16">
+      <div className="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-2xl flex-col px-6">
+        <BackLink to="/interviews" label="Past interviews" className="pt-6" />
+
+        <div className="flex flex-1 items-center py-8">
           {error ? (
             <section className="w-full text-center">
               <p className="text-sm text-destructive" role="alert">

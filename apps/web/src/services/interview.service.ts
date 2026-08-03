@@ -1,6 +1,10 @@
-import type { InterviewSources, Rubric } from '@repo/common/validations';
-import envConfig from '../config/env';
-import { apiPost, apiRequest } from './api-client';
+import {
+  DEFAULT_PAGE_SIZE,
+  type InterviewSources,
+  type Paginated,
+  type Rubric,
+} from '@repo/common/validations';
+import { apiGet, apiPost, apiRequest, downloadFile } from './api-client';
 
 export type CreateInterviewResponse = {
   id: string;
@@ -23,6 +27,18 @@ export type TranscriptLine = {
   at: string;
 };
 
+export type InterviewStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';
+
+export type InterviewSummary = {
+  id: string;
+  createdAt: string;
+  status: InterviewStatus;
+  score: number;
+  hasReport: boolean;
+  repos: string[];
+  messageCount: number;
+};
+
 export const createInterview = (sources: InterviewSources) =>
   apiPost<CreateInterviewResponse>('/interviews', sources);
 
@@ -36,5 +52,11 @@ export const createSession = (interviewId: string, offerSdp: string) =>
 export const getInterviewResult = (interviewId: string) =>
   apiRequest<InterviewResult>(`/interviews/${interviewId}/result`, { method: 'POST' });
 
-export const transcriptDownloadUrl = (interviewId: string) =>
-  `${envConfig.API_BASE_URL}/interviews/${interviewId}/transcript`;
+export const listInterviews = (page: number, limit: number = DEFAULT_PAGE_SIZE) =>
+  apiGet<Paginated<InterviewSummary>>(`/interviews?page=${page}&limit=${limit}`);
+
+export const downloadReport = (interviewId: string) =>
+  downloadFile(`/interviews/${interviewId}/report`, `intervue-report-${interviewId}.pdf`);
+
+export const downloadTranscript = (interviewId: string) =>
+  downloadFile(`/interviews/${interviewId}/transcript`, `intervue-transcript-${interviewId}.txt`);

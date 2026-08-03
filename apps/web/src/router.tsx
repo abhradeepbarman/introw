@@ -5,6 +5,8 @@ import GoogleCallbackPage from '@/pages/auth/google-callback';
 import LoginPage from '@/pages/auth/login';
 import RegisterPage from '@/pages/auth/register';
 import ResetPasswordPage from '@/pages/auth/reset-password';
+import CreditsPage from '@/pages/credits';
+import InterviewHistoryPage from '@/pages/interview/history';
 import InterviewRoom from '@/pages/interview/interview-room';
 import InterviewResultPage from '@/pages/interview/result';
 import StartInterviewPage from '@/pages/interview/start-interview';
@@ -35,6 +37,8 @@ export const router = createBrowserRouter([
       {
         element: <ProtectedRoute />,
         children: [
+          { path: '/interviews', element: <InterviewHistoryPage /> },
+          { path: '/credits', element: <CreditsPage /> },
           { path: '/interview/:id', element: <InterviewRoom /> },
           { path: '/interview/:id/result', element: <InterviewResultPage /> },
         ],

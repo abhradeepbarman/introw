@@ -8,6 +8,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { AppHeader } from '@/components/app-header';
 import { UserNav } from '@/components/auth/user-nav';
 import { useAuth } from '@/context/auth-context';
 import { cn } from '@/lib/utils';
@@ -94,13 +95,10 @@ const StartInterviewPage = () => {
 
   return (
     <main className="min-h-dvh">
-      <div className="mx-auto flex min-h-dvh max-w-6xl flex-col px-6">
-        <header className="flex items-center justify-between py-6">
-          <span className="text-sm font-semibold tracking-tight">intervue</span>
-          <UserNav />
-        </header>
+      <AppHeader right={<UserNav />} />
 
-        <div className="grid flex-1 items-center gap-14 pb-16 pt-6 lg:grid-cols-[1.05fr_minmax(0,25rem)] lg:gap-20 lg:pb-24">
+      <div className="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-6xl flex-col px-6">
+        <div className="grid flex-1 items-center gap-14 pb-16 pt-10 lg:grid-cols-[1.05fr_minmax(0,25rem)] lg:gap-20 lg:pb-24">
           <section>
             <p className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-brand">
               AI technical interview

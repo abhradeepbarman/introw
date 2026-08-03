@@ -1,8 +1,13 @@
-import { interviewSourcesSchema, rubricSchema } from '@repo/common/validations';
+import {
+  interviewSourcesSchema,
+  paginationQuerySchema,
+  rubricSchema,
+} from '@repo/common/validations';
 import axios from 'axios';
 import envConfig from '../config/env';
 import { prisma } from '../lib/prisma';
 import asyncHandler from '../utils/async-handler';
+import { buildReportPdf } from '../utils/build-report-pdf';
 import CustomErrorHandler from '../utils/custom-error-handler';
 import { evaluateInterview } from '../utils/evaluate-interview';
 import ResponseHandler from '../utils/response-handler';
@@ -15,6 +20,11 @@ type GithubRepo = {
   fork?: boolean;
   archived?: boolean;
 };
+
+const ownedBy = (interviewId: string, userId: string) => ({
+  id: interviewId,
+  OR: [{ userId }, { userId: null }],
+});
 
 export const createInterview = asyncHandler(async (req, res) => {
   const { githubUrl } = interviewSourcesSchema.parse(req.body);
@@ -81,6 +91,7 @@ export const createInterview = asyncHandler(async (req, res) => {
   const newInterview = await prisma.interview.create({
     data: {
       githubMetadata,
+      userId: req.user.id,
     },
   });
 
@@ -116,8 +127,8 @@ export const createSession = asyncHandler(async (req, res, next) => {
   const { id: interviewId } = req.params as { id: string };
   const { id: userId } = req.user;
 
-  const interview = await prisma.interview.findUnique({
-    where: { id: interviewId },
+  const interview = await prisma.interview.findFirst({
+    where: ownedBy(interviewId, userId),
   });
 
   if (!interview) {
@@ -148,11 +159,93 @@ export const createSession = asyncHandler(async (req, res, next) => {
   return res.status(200).send(ResponseHandler(200, 'Session created successfully', { sdp }));
 });
 
+export const listInterviews = asyncHandler(async (req, res) => {
+  const { page, limit } = paginationQuerySchema.parse(req.query);
+  const where = { userId: req.user.id };
+
+  const [total, interviews] = await prisma.$transaction([
+    prisma.interview.count({ where }),
+    prisma.interview.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+      select: {
+        id: true,
+        createdAt: true,
+        status: true,
+        score: true,
+        feedback: true,
+        githubMetadata: true,
+        _count: { select: { conversations: true } },
+      },
+    }),
+  ]);
+
+  const items = interviews.map((interview) => {
+    const repos = (interview.githubMetadata as GithubRepo[] | null) ?? [];
+
+    return {
+      id: interview.id,
+      createdAt: interview.createdAt,
+      status: interview.status,
+      score: interview.score,
+      hasReport: interview.status === 'COMPLETED' && Boolean(interview.feedback),
+      repos: repos.slice(0, 3).map((repo) => repo.name),
+      messageCount: interview._count.conversations,
+    };
+  });
+
+  return res.status(200).send(
+    ResponseHandler(200, 'Interviews fetched successfully', {
+      items,
+      page,
+      limit,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    }),
+  );
+});
+
+export const downloadReport = asyncHandler(async (req, res, next) => {
+  const { id: interviewId } = req.params as { id: string };
+
+  const interview = await prisma.interview.findFirst({
+    where: ownedBy(interviewId, req.user.id),
+  });
+
+  if (!interview) {
+    return next(CustomErrorHandler.notFound('Interview not found'));
+  }
+
+  if (interview.status !== 'COMPLETED' || !interview.feedback) {
+    return next(CustomErrorHandler.badRequest('This interview has not been evaluated yet'));
+  }
+
+  const stored = rubricSchema.safeParse(interview.rubric);
+
+  const pdf = await buildReportPdf({
+    id: interview.id,
+    createdAt: interview.createdAt,
+    score: interview.score,
+    feedback: interview.feedback,
+    rubric: stored.success ? stored.data : null,
+  });
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="intervue-report-${interview.id}.pdf"`,
+  );
+
+  return res.status(200).send(Buffer.from(pdf));
+});
+
 export const downloadTranscript = asyncHandler(async (req, res, next) => {
   const { id: interviewId } = req.params as { id: string };
 
-  const interview = await prisma.interview.findUnique({
-    where: { id: interviewId },
+  const interview = await prisma.interview.findFirst({
+    where: ownedBy(interviewId, req.user.id),
     include: { conversations: { orderBy: { createdAt: 'asc' } } },
   });
 
@@ -188,8 +281,8 @@ export const downloadTranscript = asyncHandler(async (req, res, next) => {
 export const getInterviewResult = asyncHandler(async (req, res, next) => {
   const { id: interviewId } = req.params as { id: string };
 
-  const interview = await prisma.interview.findUnique({
-    where: { id: interviewId },
+  const interview = await prisma.interview.findFirst({
+    where: ownedBy(interviewId, req.user.id),
     include: { conversations: { orderBy: { createdAt: 'asc' } } },
   });
 
