@@ -1,4 +1,4 @@
-import { interviewSourcesSchema } from '@repo/common/validations';
+import { interviewSourcesSchema, rubricSchema } from '@repo/common/validations';
 import axios from 'axios';
 import envConfig from '../config/env';
 import { prisma } from '../lib/prisma';
@@ -161,12 +161,14 @@ export const getInterviewResult = asyncHandler(async (req, res, next) => {
     return next(CustomErrorHandler.notFound('Interview not found'));
   }
 
-  // already evaluated — don't pay for a second evaluation
   if (interview.status === 'COMPLETED' && interview.feedback) {
+    const stored = rubricSchema.safeParse(interview.rubric);
+
     return res.status(200).send(
       ResponseHandler(200, 'Interview result', {
         score: interview.score,
         feedback: interview.feedback,
+        rubric: stored.success ? stored.data : null,
       }),
     );
   }
@@ -177,14 +179,14 @@ export const getInterviewResult = asyncHandler(async (req, res, next) => {
     );
   }
 
-  const { score, feedback } = await evaluateInterview(interview.conversations);
+  const { score, feedback, rubric } = await evaluateInterview(interview.conversations);
 
   await prisma.interview.update({
     where: { id: interviewId },
-    data: { score, feedback, status: 'COMPLETED' },
+    data: { score, feedback, rubric, status: 'COMPLETED' },
   });
 
   return res
     .status(200)
-    .send(ResponseHandler(200, 'Interview evaluated successfully', { score, feedback }));
+    .send(ResponseHandler(200, 'Interview evaluated successfully', { score, feedback, rubric }));
 });

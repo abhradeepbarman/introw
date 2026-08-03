@@ -1,4 +1,4 @@
-import type { InterviewSources } from '@repo/common/validations';
+import type { InterviewSources, Rubric } from '@repo/common/validations';
 import { apiPost, apiRequest } from './api-client';
 
 export type CreateInterviewResponse = {
@@ -12,6 +12,8 @@ export type SessionResponse = {
 export type InterviewResult = {
   score: number;
   feedback: string;
+  /** null for interviews scored before the rubric breakdown existed */
+  rubric: Rubric | null;
 };
 
 export const createInterview = (sources: InterviewSources) =>

@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/services/api-client';
 import { getInterviewResult, type InterviewResult } from '@/services/interview.service';
+import { DIMENSION_KEYS, DIMENSIONS, type Dimension, type Rubric } from '@repo/common/validations';
 import { ArrowRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -13,6 +14,117 @@ const bandFor = (score: number) => {
   if (score >= 50) return 'Promising';
   return 'Needs work';
 };
+
+const SectionLabel = ({ children }: { children: ReactNode }) => (
+  <h2 className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground">
+    {children}
+  </h2>
+);
+
+function Points({ title, items, accent }: { title: string; items: string[]; accent: boolean }) {
+  if (items.length === 0) return null;
+
+  return (
+    <div className="space-y-1.5">
+      <h4 className="font-mono text-[0.625rem] uppercase tracking-[0.14em] text-muted-foreground">
+        {title}
+      </h4>
+      <ul className="space-y-1">
+        {items.map((item) => (
+          <li key={item} className="flex gap-2 text-sm leading-relaxed">
+            <span
+              aria-hidden
+              className={`mt-2 size-1 shrink-0 rounded-full ${accent ? 'bg-brand' : 'bg-muted-foreground'}`}
+            />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function DimensionRow({
+  dimension,
+  label,
+  blurb,
+}: {
+  dimension: Dimension;
+  label: string;
+  blurb: string;
+}) {
+  const { assessed, score, summary, evidence, strengths, improvements } = dimension;
+
+  return (
+    <li className="space-y-3 py-5 first:pt-0 last:pb-0">
+      <div className="flex items-baseline justify-between gap-4">
+        <div>
+          <h3 className="text-sm font-medium">{label}</h3>
+          <p className="text-xs text-muted-foreground">{blurb}</p>
+        </div>
+        {assessed ? (
+          <p className="shrink-0 font-mono text-sm tabular-nums">
+            {score}
+            <span className="text-muted-foreground"> / 100</span>
+          </p>
+        ) : (
+          <p className="shrink-0 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-muted-foreground">
+            Not assessed
+          </p>
+        )}
+      </div>
+
+      <div className="h-px bg-muted" role="presentation">
+        {assessed && (
+          <div
+            className="h-full bg-brand transition-[width] duration-700 ease-out"
+            style={{ width: `${score}%` }}
+          />
+        )}
+      </div>
+
+      <p className="text-sm leading-relaxed text-muted-foreground">{summary}</p>
+
+      {evidence.length > 0 && (
+        <ul className="space-y-2">
+          {evidence.map((quote) => (
+            <li
+              key={quote}
+              className="border-l-2 border-border pl-3 text-sm italic leading-relaxed text-muted-foreground"
+            >
+              “{quote}”
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {(strengths.length > 0 || improvements.length > 0) && (
+        <div className="grid gap-4 pt-1 sm:grid-cols-2">
+          <Points title="Did well" items={strengths} accent />
+          <Points title="Work on" items={improvements} accent={false} />
+        </div>
+      )}
+    </li>
+  );
+}
+
+function Breakdown({ rubric }: { rubric: Rubric }) {
+  return (
+    <div className="space-y-3">
+      <SectionLabel>Breakdown</SectionLabel>
+      <ul className="divide-y divide-border">
+        {DIMENSION_KEYS.map((key) => (
+          <DimensionRow
+            key={key}
+            dimension={rubric[key]}
+            label={DIMENSIONS[key].label}
+            blurb={DIMENSIONS[key].blurb}
+          />
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 function ResultCard({ status, children }: { status: string; children: ReactNode }) {
   return (
@@ -45,9 +157,22 @@ function PendingResult() {
 
       <div className="space-y-6 px-6 py-7">
         <div className="space-y-3">
-          <h2 className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground">
-            Feedback
-          </h2>
+          <SectionLabel>Breakdown</SectionLabel>
+          <ul className="divide-y divide-border" aria-hidden>
+            {DIMENSION_KEYS.map((key) => (
+              <li key={key} className="space-y-2.5 py-4 first:pt-0 last:pb-0">
+                <div className="flex items-baseline justify-between gap-4">
+                  <div className="h-3 w-2/5 animate-pulse rounded bg-muted" />
+                  <div className="h-3 w-12 animate-pulse rounded bg-muted" />
+                </div>
+                <div className="h-px bg-muted" />
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="space-y-3">
+          <SectionLabel>Feedback</SectionLabel>
           <div className="space-y-2.5" aria-hidden>
             <div className="h-3 animate-pulse rounded bg-muted" />
             <div className="h-3 animate-pulse rounded bg-muted [animation-delay:150ms]" />
@@ -83,11 +208,11 @@ function ScoredResult({ result, onRestart }: { result: InterviewResult; onRestar
         />
       </div>
 
-      <div className="space-y-6 px-6 py-7">
+      <div className="space-y-8 px-6 py-7">
+        {result.rubric && <Breakdown rubric={result.rubric} />}
+
         <div className="space-y-3">
-          <h2 className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground">
-            Feedback
-          </h2>
+          <SectionLabel>Feedback</SectionLabel>
           <p className="whitespace-pre-line leading-relaxed">{result.feedback}</p>
         </div>
 

@@ -21,8 +21,6 @@ export const router = createBrowserRouter([
   {
     element: <RootLayout />,
     children: [
-      // Open to everyone — signed-in visitors get their profile and credits
-      // in the header instead of being redirected.
       { path: '/', element: <StartInterviewPage /> },
       { path: '/auth/google-callback', element: <GoogleCallbackPage /> },
       {
