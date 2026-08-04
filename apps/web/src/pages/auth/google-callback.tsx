@@ -2,10 +2,6 @@ import { useAuth } from '@/context/auth-context';
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-/**
- * Google redirects here after the server has already set the session cookies —
- * this page only has to pull the user into context and move on.
- */
 const GoogleCallbackPage = () => {
   const { refreshUser } = useAuth();
   const navigate = useNavigate();

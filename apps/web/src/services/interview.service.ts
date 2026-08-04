@@ -10,7 +10,7 @@ export type CreateInterviewResponse = {
   id: string;
 };
 
-export type SessionResponse = {
+export type InterviewSessionResponse = {
   sdp: string;
 };
 
@@ -42,8 +42,8 @@ export type InterviewSummary = {
 export const createInterview = (sources: InterviewSources) =>
   apiPost<CreateInterviewResponse>('/interviews', sources);
 
-export const createSession = (interviewId: string, offerSdp: string) =>
-  apiRequest<SessionResponse>(`/interviews/${interviewId}/session`, {
+export const createInterviewSession = (interviewId: string, offerSdp: string) =>
+  apiRequest<InterviewSessionResponse>(`/interviews/${interviewId}/session`, {
     method: 'POST',
     body: offerSdp,
     headers: { 'Content-Type': 'application/sdp' },

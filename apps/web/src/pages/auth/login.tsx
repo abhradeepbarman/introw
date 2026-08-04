@@ -33,7 +33,6 @@ const LoginPage = () => {
   const { setError } = form;
   const oauthError = searchParams.get('error');
 
-  // Google sign-in failures come back as a redirect, not a response.
   useEffect(() => {
     if (oauthError) setError('root', { message: oauthError });
   }, [oauthError, setError]);

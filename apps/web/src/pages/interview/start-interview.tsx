@@ -20,39 +20,9 @@ import {
   interviewSourcesSchema,
   type InterviewSources,
 } from '@repo/common/validations';
-import type { LucideIcon } from 'lucide-react';
 import { ArrowRight, Github } from 'lucide-react';
-import type { ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
-
-type SourceRowProps = {
-  icon: LucideIcon;
-  iconClassName: string;
-  ready: boolean;
-  children: ReactNode;
-};
-
-/**
- * One source on the intake rail: a marker that keeps the source's own colour,
- * and a status that flips once the URL parses as a real profile.
- */
-function SourceRow({ icon: Icon, iconClassName, ready, children }: SourceRowProps) {
-  return (
-    <div className="relative pl-11">
-      <span
-        aria-hidden
-        className={cn(
-          'absolute left-0 top-0 flex size-7 items-center justify-center rounded-md border bg-card transition-colors duration-300',
-          ready ? 'border-brand ring-3 ring-brand-wash' : 'border-border',
-        )}
-      >
-        <Icon className={cn('size-3.5', iconClassName)} />
-      </span>
-      {children}
-    </div>
-  );
-}
 
 const StartInterviewPage = () => {
   const form = useForm<InterviewSources>({
@@ -136,7 +106,17 @@ const StartInterviewPage = () => {
                   control={form.control}
                   name="githubUrl"
                   render={({ field }) => (
-                    <SourceRow icon={Github} iconClassName="text-source-github" ready={githubReady}>
+                    <div className="relative pl-11">
+                      <span
+                        aria-hidden
+                        className={cn(
+                          'absolute left-0 top-0 flex size-7 items-center justify-center rounded-md border bg-card transition-colors duration-300',
+                          githubReady ? 'border-brand ring-3 ring-brand-wash' : 'border-border',
+                        )}
+                      >
+                        <Github className="size-3.5 text-source-github" />
+                      </span>
+
                       <FormItem className="gap-2">
                         <div className="flex items-baseline justify-between">
                           <FormLabel className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground">
@@ -164,7 +144,7 @@ const StartInterviewPage = () => {
                         </FormControl>
                         <FormMessage />
                       </FormItem>
-                    </SourceRow>
+                    </div>
                   )}
                 />
 

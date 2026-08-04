@@ -2,25 +2,50 @@ import { AppHeader } from '@/components/app-header';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ApiError } from '@/services/api-client';
-import { createSession } from '@/services/interview.service';
+import { createInterviewSession } from '@/services/interview.service';
 import type { LucideIcon } from 'lucide-react';
 import { Bot, Mic, MicOff, PhoneOff, User } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 type Status = 'idle' | 'connecting' | 'live' | 'error';
-type Turn = 'interviewer' | 'candidate' | 'silent';
 
-const FFT_SIZE = 1024;
 const SPEAKING_THRESHOLD = 0.02;
-const PRIMARY_BUTTON =
-  'bg-brand text-brand-foreground hover:bg-brand-hover focus-visible:ring-brand/40';
+const LEVEL_DECAY = 0.85;
 
-const analyserFor = (context: AudioContext, stream: MediaStream) => {
+const startMicMeter = (stream: MediaStream, onChange: (speaking: boolean) => void) => {
+  const context = new AudioContext();
   const analyser = context.createAnalyser();
-  analyser.fftSize = FFT_SIZE;
+  analyser.fftSize = 1024;
   context.createMediaStreamSource(stream).connect(analyser);
-  return analyser;
+
+  const samples = new Float32Array(analyser.fftSize);
+  let frameId = 0;
+  let level = 0;
+  let speaking = false;
+
+  const frame = () => {
+    analyser.getFloatTimeDomainData(samples);
+
+    let total = 0;
+    for (let i = 0; i < samples.length; i += 1) total += samples[i]! * samples[i]!;
+    level = Math.max(Math.sqrt(total / samples.length), level * LEVEL_DECAY);
+
+    const next = level > SPEAKING_THRESHOLD;
+    if (next !== speaking) {
+      speaking = next;
+      onChange(next);
+    }
+
+    frameId = requestAnimationFrame(frame);
+  };
+
+  frameId = requestAnimationFrame(frame);
+
+  return () => {
+    cancelAnimationFrame(frameId);
+    void context.close();
+  };
 };
 
 const InterviewRoom = () => {
@@ -30,20 +55,17 @@ const InterviewRoom = () => {
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
-  const [turn, setTurn] = useState<Turn>('silent');
+  const [candidateSpeaking, setCandidateSpeaking] = useState(false);
+  const [interviewerSpeaking, setInterviewerSpeaking] = useState(false);
 
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
+  const stopMicMeterRef = useRef<(() => void) | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const localAnalyserRef = useRef<AnalyserNode | null>(null);
-  const remoteAnalyserRef = useRef<AnalyserNode | null>(null);
-  const frameRef = useRef<number | null>(null);
-  const turnRef = useRef<Turn>('silent');
 
   const teardown = useCallback(() => {
-    if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
-    frameRef.current = null;
+    stopMicMeterRef.current?.();
+    stopMicMeterRef.current = null;
 
     micStreamRef.current?.getTracks().forEach((track) => track.stop());
     micStreamRef.current = null;
@@ -51,49 +73,7 @@ const InterviewRoom = () => {
     peerRef.current?.close();
     peerRef.current = null;
 
-    void audioContextRef.current?.close();
-    audioContextRef.current = null;
-    localAnalyserRef.current = null;
-    remoteAnalyserRef.current = null;
-
     if (audioRef.current) audioRef.current.srcObject = null;
-  }, []);
-
-  const startMeter = useCallback(() => {
-    const samples = new Float32Array(FFT_SIZE);
-
-    const levelOf = (analyser: AnalyserNode | null) => {
-      if (!analyser) return 0;
-      analyser.getFloatTimeDomainData(samples);
-      let total = 0;
-      for (let i = 0; i < samples.length; i += 1) total += samples[i]! * samples[i]!;
-      return Math.sqrt(total / samples.length);
-    };
-
-    const hold = (previous: number, level: number) =>
-      level > previous ? level : previous * 0.9 + level * 0.1;
-
-    let remoteLevel = 0;
-    let localLevel = 0;
-
-    const frame = () => {
-      remoteLevel = hold(remoteLevel, levelOf(remoteAnalyserRef.current));
-      localLevel = hold(localLevel, levelOf(localAnalyserRef.current));
-
-      let next: Turn = 'silent';
-      if (Math.max(remoteLevel, localLevel) > SPEAKING_THRESHOLD) {
-        next = remoteLevel >= localLevel ? 'interviewer' : 'candidate';
-      }
-
-      if (next !== turnRef.current) {
-        turnRef.current = next;
-        setTurn(next);
-      }
-
-      frameRef.current = requestAnimationFrame(frame);
-    };
-
-    frameRef.current = requestAnimationFrame(frame);
   }, []);
 
   const join = useCallback(async () => {
@@ -103,41 +83,43 @@ const InterviewRoom = () => {
     setError(null);
 
     try {
-      const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const micStream = await navigator.mediaDevices.getUserMedia({
+        audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true },
+      });
       micStreamRef.current = micStream;
-
-      const context = new AudioContext();
-      audioContextRef.current = context;
-      localAnalyserRef.current = analyserFor(context, micStream);
 
       const peer = new RTCPeerConnection();
       peerRef.current = peer;
 
       peer.ontrack = (event) => {
         const [remoteStream] = event.streams;
-        if (!remoteStream || !audioRef.current) return;
-
-        audioRef.current.srcObject = remoteStream;
-        remoteAnalyserRef.current = analyserFor(context, remoteStream);
+        if (remoteStream && audioRef.current) audioRef.current.srcObject = remoteStream;
       };
 
       micStream.getTracks().forEach((track) => peer.addTrack(track, micStream));
 
+      peer.createDataChannel('oai-events').addEventListener('message', (message) => {
+        const { type } = JSON.parse(message.data as string) as { type: string };
+        if (type.startsWith('output_audio_buffer.')) {
+          setInterviewerSpeaking(type === 'output_audio_buffer.started');
+        }
+      });
+
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
 
-      const { sdp } = await createSession(interviewId, offer.sdp ?? '');
+      const { sdp } = await createInterviewSession(interviewId, offer.sdp ?? '');
       await peer.setRemoteDescription({ type: 'answer', sdp });
 
+      stopMicMeterRef.current = startMicMeter(micStream, setCandidateSpeaking);
       setStatus('live');
-      startMeter();
     } catch (cause) {
       console.error('Failed to join interview room:', cause);
       teardown();
       setStatus('error');
       setError(describeError(cause));
     }
-  }, [interviewId, startMeter, teardown]);
+  }, [interviewId, teardown]);
 
   const toggleMute = () => {
     const nextMuted = !muted;
@@ -157,46 +139,8 @@ const InterviewRoom = () => {
   const statusLine: Record<Status, string> = {
     idle: 'Your interviewer is ready when you are.',
     connecting: 'Connecting',
-    live: muted ? 'Mic off' : turn === 'interviewer' ? 'Interviewer speaking' : 'Listening',
+    live: muted ? 'Mic off' : interviewerSpeaking ? 'Interviewer speaking' : 'Listening',
     error: error ?? 'Something went wrong.',
-  };
-
-  const renderControls = () => {
-    if (status === 'live') {
-      return (
-        <>
-          <Button type="button" variant="outline" onClick={toggleMute} aria-pressed={muted}>
-            {muted ? <MicOff className="size-4" /> : <Mic className="size-4" />}
-            {muted ? 'Unmute' : 'Mute'}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={end}
-            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-          >
-            <PhoneOff className="size-4" />
-            End interview
-          </Button>
-        </>
-      );
-    }
-
-    return (
-      <Button
-        type="button"
-        disabled={status === 'connecting'}
-        onClick={() => void join()}
-        className={PRIMARY_BUTTON}
-      >
-        <Mic className="size-4" />
-        {status === 'connecting'
-          ? 'Connecting'
-          : status === 'error'
-            ? 'Try again'
-            : 'Start interview'}
-      </Button>
-    );
   };
 
   return (
@@ -207,8 +151,8 @@ const InterviewRoom = () => {
         <audio ref={audioRef} autoPlay className="hidden" />
 
         <div className="flex items-center gap-12 sm:gap-20">
-          <Seat icon={Bot} name="Interviewer" speaking={turn === 'interviewer'} />
-          <Seat icon={User} name="You" speaking={turn === 'candidate'} muted={muted} />
+          <Seat icon={Bot} name="Interviewer" speaking={interviewerSpeaking} />
+          <Seat icon={User} name="You" speaking={!muted && candidateSpeaking} muted={muted} />
         </div>
 
         <p
@@ -218,7 +162,39 @@ const InterviewRoom = () => {
           {statusLine[status]}
         </p>
 
-        <div className="mt-8 flex items-center gap-3">{renderControls()}</div>
+        <div className="mt-8 flex items-center gap-3">
+          {status === 'live' ? (
+            <>
+              <Button type="button" variant="outline" onClick={toggleMute} aria-pressed={muted}>
+                {muted ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+                {muted ? 'Unmute' : 'Mute'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={end}
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <PhoneOff className="size-4" />
+                End interview
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="button"
+              disabled={status === 'connecting'}
+              onClick={() => void join()}
+              className="bg-brand text-brand-foreground hover:bg-brand-hover focus-visible:ring-brand/40"
+            >
+              <Mic className="size-4" />
+              {status === 'connecting'
+                ? 'Connecting'
+                : status === 'error'
+                  ? 'Try again'
+                  : 'Start interview'}
+            </Button>
+          )}
+        </div>
       </main>
     </>
   );
