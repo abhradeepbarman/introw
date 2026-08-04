@@ -66,7 +66,10 @@ const CreditsPage = () => {
             </div>
 
             <div className="grid divide-y divide-border border-t border-border sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-              <Stat label="Interviews run" value={interviewsRun === null ? '—' : `${interviewsRun}`} />
+              <Stat
+                label="Interviews run"
+                value={interviewsRun === null ? '—' : `${interviewsRun}`}
+              />
               <Stat label="Remaining" value={`${credits}`} />
             </div>
 

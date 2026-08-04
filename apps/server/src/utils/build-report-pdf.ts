@@ -176,11 +176,11 @@ export const buildReportPdf = async (interview: ReportInput): Promise<Uint8Array
       ensureRoom(layout, 90);
       writeText(layout, DIMENSIONS[key].label, { font: layout.bold, size: 12.5 });
       gap(layout, 2);
-      writeText(
-        layout,
-        dimension.assessed ? `${dimension.score} / 100` : 'Not assessed',
-        { font: layout.bold, size: 9.5, color: dimension.assessed ? BRAND : MUTED },
-      );
+      writeText(layout, dimension.assessed ? `${dimension.score} / 100` : 'Not assessed', {
+        font: layout.bold,
+        size: 9.5,
+        color: dimension.assessed ? BRAND : MUTED,
+      });
       gap(layout, 6);
 
       if (dimension.assessed) {

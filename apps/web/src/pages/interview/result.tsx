@@ -206,7 +206,10 @@ function ResultFooter({
       </div>
 
       {error && (
-        <p className="border-t border-border px-6 py-3 text-center text-xs text-destructive" role="alert">
+        <p
+          className="border-t border-border px-6 py-3 text-center text-xs text-destructive"
+          role="alert"
+        >
           {error}
         </p>
       )}
