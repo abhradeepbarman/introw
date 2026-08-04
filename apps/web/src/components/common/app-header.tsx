@@ -1,4 +1,4 @@
-import { Brand } from '@/components/brand';
+import { Brand } from '@/components/common/brand';
 import { cn } from '@/lib/utils';
 import { ArrowLeft } from 'lucide-react';
 import type { ReactNode } from 'react';

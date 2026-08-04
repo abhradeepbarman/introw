@@ -8,8 +8,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { AppHeader } from '@/components/app-header';
-import { UserNav } from '@/components/auth/user-nav';
+import { AppHeader } from '@/components/common/app-header';
+import { UserNav } from '@/components/common/user-nav';
 import { useAuth } from '@/context/auth-context';
 import { cn } from '@/lib/utils';
 import { ApiError } from '@/services/api-client';

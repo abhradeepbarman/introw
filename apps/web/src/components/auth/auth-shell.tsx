@@ -1,4 +1,4 @@
-import { AppHeader, BackLink } from '@/components/app-header';
+import { AppHeader, BackLink } from '@/components/common/app-header';
 import type { ReactNode } from 'react';
 
 type AuthShellProps = {

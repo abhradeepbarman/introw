@@ -10,15 +10,18 @@ export function BrandMark({ className }: { className?: string }) {
         className,
       )}
     >
-      <svg viewBox="0 0 24 24" fill="none" className="size-[1.05rem]">
+      <svg viewBox="0 0 24 24" fill="none" className="size-[1.15rem]">
         <path
-          d="M7 8.25 10.75 12 7 15.75"
+          d="M4.2 1.5H10.8A2.4 2.4 0 0 1 13.2 3.9V7.1A2.4 2.4 0 0 1 10.8 9.5H7.8L4.6 12.6V9.5H4.2A2.4 2.4 0 0 1 1.8 7.1V3.9A2.4 2.4 0 0 1 4.2 1.5Z"
           stroke="currentColor"
-          strokeWidth="2.3"
-          strokeLinecap="round"
+          strokeWidth="2.2"
           strokeLinejoin="round"
         />
-        <path d="M13.75 15.75H17.5" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+        <path
+          d="M14 12.4H19.8A2.4 2.4 0 0 1 22.2 14.8V17.6A2.4 2.4 0 0 1 19.8 20L19.8 23.1L16.6 20H14A2.4 2.4 0 0 1 11.6 17.6V14.8A2.4 2.4 0 0 1 14 12.4Z"
+          fill="currentColor"
+          strokeLinejoin="round"
+        />
       </svg>
     </span>
   );

@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/auth-context';
-import { ChevronDown, Coins, History, LogOut } from 'lucide-react';
+import { ChevronDown, History, LogOut } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const initialsOf = (name: string) =>
@@ -18,19 +18,6 @@ const initialsOf = (name: string) =>
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? '')
     .join('');
-
-function CreditsBadge({ credits }: { credits: number }) {
-  return (
-    <Link
-      to="/credits"
-      title={`${credits} interview ${credits === 1 ? 'credit' : 'credits'} remaining`}
-      className="hidden items-center gap-1.5 rounded-full border border-border bg-brand-wash px-2.5 py-1 font-mono text-[0.6875rem] tabular-nums text-brand outline-none transition-colors hover:border-brand/40 focus-visible:ring-2 focus-visible:ring-brand/40 sm:flex"
-    >
-      <Coins className="size-3.5" />
-      {credits}
-    </Link>
-  );
-}
 
 export function UserNav() {
   const { user, logout } = useAuth();
@@ -60,8 +47,6 @@ export function UserNav() {
 
   return (
     <div className="flex items-center gap-3">
-      <CreditsBadge credits={user.credits} />
-
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label="Account menu"
@@ -91,16 +76,6 @@ export function UserNav() {
             <Link to="/interviews">
               <History />
               Past interviews
-            </Link>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem asChild>
-            <Link to="/credits">
-              <Coins />
-              Credits
-              <span className="ml-auto font-mono text-[0.6875rem] tabular-nums text-brand">
-                {user.credits}
-              </span>
             </Link>
           </DropdownMenuItem>
 

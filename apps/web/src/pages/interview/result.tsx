@@ -1,5 +1,5 @@
-import { AppHeader, BackLink } from '@/components/app-header';
-import { UserNav } from '@/components/auth/user-nav';
+import { AppHeader, BackLink } from '@/components/common/app-header';
+import { UserNav } from '@/components/common/user-nav';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/services/api-client';
 import {
@@ -9,13 +9,80 @@ import {
   type InterviewResult,
   type TranscriptLine,
 } from '@/services/interview.service';
-import { DIMENSION_KEYS, DIMENSIONS, type Dimension, type Rubric } from '@repo/common/validations';
+import {
+  DIMENSION_KEYS,
+  DIMENSIONS,
+  type Dimension,
+  type DimensionKey,
+} from '@repo/common/validations';
 import { ArrowRight, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+const InterviewResultPage = () => {
+  const { id: interviewId } = useParams();
+  const navigate = useNavigate();
+
+  const [result, setResult] = useState<InterviewResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const requestedRef = useRef(false);
+
+  useEffect(() => {
+    if (!interviewId || requestedRef.current) return;
+    requestedRef.current = true;
+
+    getInterviewResult(interviewId)
+      .then(setResult)
+      .catch((cause: unknown) => {
+        console.error('Failed to load interview result:', cause);
+        setError(
+          cause instanceof ApiError
+            ? cause.message
+            : 'Could not load your result. Check your connection and try again.',
+        );
+      });
+  }, [interviewId]);
+
+  const goHome = () => navigate('/');
+
+  return (
+    <main className="min-h-dvh">
+      <AppHeader right={<UserNav />} />
+
+      <div className="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-2xl flex-col px-6">
+        <BackLink to="/interviews" label="Past interviews" className="pt-6" />
+
+        <div className="flex flex-1 items-center py-8">
+          {error ? (
+            <section className="w-full text-center">
+              <p className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
+              <Button
+                type="button"
+                onClick={goHome}
+                className="mt-6 bg-brand text-brand-foreground hover:bg-brand-hover focus-visible:ring-brand/40"
+              >
+                Back to start
+              </Button>
+            </section>
+          ) : result ? (
+            <ScoredResult result={result} interviewId={interviewId ?? ''} onRestart={goHome} />
+          ) : (
+            <PendingResult />
+          )}
+        </div>
+      </div>
+    </main>
+  );
+};
+
+export default InterviewResultPage;
+
 const SCORE_HEIGHT = 'h-[clamp(2.75rem,9vw,4rem)]';
+const SECTION_LABEL =
+  'font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground';
 
 const bandFor = (score: number) => {
   if (score >= 75) return 'Strong';
@@ -23,13 +90,7 @@ const bandFor = (score: number) => {
   return 'Needs work';
 };
 
-const SectionLabel = ({ children }: { children: ReactNode }) => (
-  <h2 className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground">
-    {children}
-  </h2>
-);
-
-function Points({ title, items, accent }: { title: string; items: string[]; accent: boolean }) {
+function Points({ title, items, dot }: { title: string; items: string[]; dot: string }) {
   if (items.length === 0) return null;
 
   return (
@@ -40,10 +101,7 @@ function Points({ title, items, accent }: { title: string; items: string[]; acce
       <ul className="space-y-1">
         {items.map((item) => (
           <li key={item} className="flex gap-2 text-sm leading-relaxed">
-            <span
-              aria-hidden
-              className={`mt-2 size-1 shrink-0 rounded-full ${accent ? 'bg-brand' : 'bg-muted-foreground'}`}
-            />
+            <span aria-hidden className={`mt-2 size-1 shrink-0 rounded-full ${dot}`} />
             {item}
           </li>
         ))}
@@ -52,15 +110,8 @@ function Points({ title, items, accent }: { title: string; items: string[]; acce
   );
 }
 
-function DimensionRow({
-  dimension,
-  label,
-  blurb,
-}: {
-  dimension: Dimension;
-  label: string;
-  blurb: string;
-}) {
+function DimensionRow({ name, dimension }: { name: DimensionKey; dimension: Dimension }) {
+  const { label, blurb } = DIMENSIONS[name];
   const { assessed, score, summary, evidence, strengths, improvements } = dimension;
 
   return (
@@ -108,29 +159,11 @@ function DimensionRow({
 
       {(strengths.length > 0 || improvements.length > 0) && (
         <div className="grid gap-4 pt-1 sm:grid-cols-2">
-          <Points title="Did well" items={strengths} accent />
-          <Points title="Work on" items={improvements} accent={false} />
+          <Points title="Did well" items={strengths} dot="bg-brand" />
+          <Points title="Work on" items={improvements} dot="bg-muted-foreground" />
         </div>
       )}
     </li>
-  );
-}
-
-function Breakdown({ rubric }: { rubric: Rubric }) {
-  return (
-    <div className="space-y-3">
-      <SectionLabel>Breakdown</SectionLabel>
-      <ul className="divide-y divide-border">
-        {DIMENSION_KEYS.map((key) => (
-          <DimensionRow
-            key={key}
-            dimension={rubric[key]}
-            label={DIMENSIONS[key].label}
-            blurb={DIMENSIONS[key].blurb}
-          />
-        ))}
-      </ul>
-    </div>
   );
 }
 
@@ -268,7 +301,7 @@ function PendingResult() {
 
       <div className="space-y-6 px-6 py-7">
         <div className="space-y-3">
-          <SectionLabel>Breakdown</SectionLabel>
+          <h2 className={SECTION_LABEL}>Breakdown</h2>
           <ul className="divide-y divide-border" aria-hidden>
             {DIMENSION_KEYS.map((key) => (
               <li key={key} className="space-y-2.5 py-4 first:pt-0 last:pb-0">
@@ -283,7 +316,7 @@ function PendingResult() {
         </div>
 
         <div className="space-y-3">
-          <SectionLabel>Feedback</SectionLabel>
+          <h2 className={SECTION_LABEL}>Feedback</h2>
           <div className="space-y-2.5" aria-hidden>
             <div className="h-3 animate-pulse rounded bg-muted" />
             <div className="h-3 animate-pulse rounded bg-muted [animation-delay:150ms]" />
@@ -309,12 +342,14 @@ function ScoredResult({
   interviewId: string;
   onRestart: () => void;
 }) {
+  const { score, rubric, feedback, transcript } = result;
+
   return (
-    <ResultCard status={bandFor(result.score)}>
+    <ResultCard status={bandFor(score)}>
       <div className="px-6 pb-5">
         <p className={`flex items-baseline gap-1.5 ${SCORE_HEIGHT}`}>
           <span className="text-[clamp(2.75rem,9vw,4rem)] font-semibold leading-none tracking-[-0.03em] tabular-nums">
-            {result.score}
+            {score}
           </span>
           <span className="font-mono text-sm text-muted-foreground">/ 100</span>
         </p>
@@ -323,16 +358,25 @@ function ScoredResult({
       <div className="h-0.5 bg-muted" role="presentation">
         <div
           className="h-full bg-brand transition-[width] duration-700 ease-out"
-          style={{ width: `${result.score}%` }}
+          style={{ width: `${score}%` }}
         />
       </div>
 
       <div className="space-y-8 px-6 py-7">
-        {result.rubric && <Breakdown rubric={result.rubric} />}
+        {rubric && (
+          <div className="space-y-3">
+            <h2 className={SECTION_LABEL}>Breakdown</h2>
+            <ul className="divide-y divide-border">
+              {DIMENSION_KEYS.map((key) => (
+                <DimensionRow key={key} name={key} dimension={rubric[key]} />
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="space-y-3">
-          <SectionLabel>Feedback</SectionLabel>
-          <p className="whitespace-pre-line leading-relaxed">{result.feedback}</p>
+          <h2 className={SECTION_LABEL}>Feedback</h2>
+          <p className="whitespace-pre-line leading-relaxed">{feedback}</p>
         </div>
 
         <Button
@@ -345,67 +389,7 @@ function ScoredResult({
         </Button>
       </div>
 
-      <ResultFooter transcript={result.transcript} interviewId={interviewId} />
+      <ResultFooter transcript={transcript} interviewId={interviewId} />
     </ResultCard>
   );
 }
-
-const InterviewResultPage = () => {
-  const { id: interviewId } = useParams();
-  const navigate = useNavigate();
-
-  const [result, setResult] = useState<InterviewResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const requestedRef = useRef(false);
-
-  useEffect(() => {
-    if (!interviewId || requestedRef.current) return;
-    requestedRef.current = true;
-
-    getInterviewResult(interviewId)
-      .then(setResult)
-      .catch((cause: unknown) => {
-        console.error('Failed to load interview result:', cause);
-        setError(
-          cause instanceof ApiError
-            ? cause.message
-            : 'Could not load your result. Check your connection and try again.',
-        );
-      });
-  }, [interviewId]);
-
-  const goHome = () => navigate('/');
-
-  return (
-    <main className="min-h-dvh">
-      <AppHeader right={<UserNav />} />
-
-      <div className="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-2xl flex-col px-6">
-        <BackLink to="/interviews" label="Past interviews" className="pt-6" />
-
-        <div className="flex flex-1 items-center py-8">
-          {error ? (
-            <section className="w-full text-center">
-              <p className="text-sm text-destructive" role="alert">
-                {error}
-              </p>
-              <Button
-                type="button"
-                onClick={goHome}
-                className="mt-6 bg-brand text-brand-foreground hover:bg-brand-hover focus-visible:ring-brand/40"
-              >
-                Back to start
-              </Button>
-            </section>
-          ) : result ? (
-            <ScoredResult result={result} interviewId={interviewId ?? ''} onRestart={goHome} />
-          ) : (
-            <PendingResult />
-          )}
-        </div>
-      </div>
-    </main>
-  );
-};
-
-export default InterviewResultPage;

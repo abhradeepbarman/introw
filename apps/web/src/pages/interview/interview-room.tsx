@@ -1,4 +1,4 @@
-import { AppHeader } from '@/components/app-header';
+import { AppHeader } from '@/components/common/app-header';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ApiError } from '@/services/api-client';

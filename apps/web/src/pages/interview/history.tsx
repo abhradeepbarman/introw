@@ -1,5 +1,5 @@
-import { AppHeader, BackLink } from '@/components/app-header';
-import { UserNav } from '@/components/auth/user-nav';
+import { AppHeader, BackLink } from '@/components/common/app-header';
+import { UserNav } from '@/components/common/user-nav';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ApiError } from '@/services/api-client';
@@ -130,38 +130,23 @@ function InterviewRow({ interview }: { interview: InterviewSummary }) {
   );
 }
 
-const pageWindow = (current: number, total: number): (number | 'gap')[] => {
-  const wanted = new Set<number>([1, total, current - 1, current, current + 1]);
-
-  if (current <= 3) [2, 3, 4].forEach((page) => wanted.add(page));
-  if (current >= total - 2) [total - 3, total - 2, total - 1].forEach((page) => wanted.add(page));
-
-  const sorted = [...wanted].filter((page) => page >= 1 && page <= total).sort((a, b) => a - b);
-
-  return sorted.flatMap((page, index) => {
-    const previous = sorted[index - 1];
-    return previous !== undefined && page - previous > 1 ? ['gap' as const, page] : [page];
-  });
-};
-
 const PAGE_BUTTON =
   'grid size-8 place-items-center rounded-md font-mono text-[0.6875rem] tabular-nums transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand/40 disabled:pointer-events-none disabled:opacity-40';
 
 function Pagination({
-  page,
-  totalPages,
-  total,
-  limit,
+  result,
   onChange,
 }: {
-  page: number;
-  totalPages: number;
-  total: number;
-  limit: number;
+  result: Paginated<InterviewSummary>;
   onChange: (page: number) => void;
 }) {
+  const { page, totalPages, total, limit } = result;
   const first = (page - 1) * limit + 1;
   const last = Math.min(page * limit, total);
+
+  const windowSize = Math.min(5, totalPages);
+  const windowStart = Math.min(Math.max(1, page - 2), Math.max(1, totalPages - windowSize + 1));
+  const pages = Array.from({ length: windowSize }, (_, index) => windowStart + index);
 
   return (
     <nav
@@ -183,32 +168,22 @@ function Pagination({
           <ChevronLeft className="size-4" />
         </button>
 
-        {pageWindow(page, totalPages).map((entry, index) =>
-          entry === 'gap' ? (
-            <span
-              key={`gap-${index}`}
-              aria-hidden
-              className="grid size-8 place-items-center text-xs text-muted-foreground"
-            >
-              …
-            </span>
-          ) : (
-            <button
-              key={entry}
-              type="button"
-              onClick={() => onChange(entry)}
-              aria-current={entry === page ? 'page' : undefined}
-              className={cn(
-                PAGE_BUTTON,
-                entry === page
-                  ? 'bg-brand text-brand-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-              )}
-            >
-              {entry}
-            </button>
-          ),
-        )}
+        {pages.map((entry) => (
+          <button
+            key={entry}
+            type="button"
+            onClick={() => onChange(entry)}
+            aria-current={entry === page ? 'page' : undefined}
+            className={cn(
+              PAGE_BUTTON,
+              entry === page
+                ? 'bg-brand text-brand-foreground'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+            )}
+          >
+            {entry}
+          </button>
+        ))}
 
         <button
           type="button"
@@ -340,15 +315,7 @@ const InterviewHistoryPage = () => {
                   ))}
                 </ul>
 
-                {result.totalPages > 1 && (
-                  <Pagination
-                    page={result.page}
-                    totalPages={result.totalPages}
-                    total={result.total}
-                    limit={result.limit}
-                    onChange={goToPage}
-                  />
-                )}
+                {result.totalPages > 1 && <Pagination result={result} onChange={goToPage} />}
               </>
             )}
           </div>
