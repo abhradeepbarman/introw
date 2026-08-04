@@ -1,4 +1,4 @@
-import { AppHeader } from '@/components/common/app-header';
+import { Brand } from '@/components/common/brand';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ApiError } from '@/services/api-client';
@@ -6,7 +6,7 @@ import { createInterviewSession } from '@/services/interview.service';
 import type { LucideIcon } from 'lucide-react';
 import { Bot, Mic, MicOff, PhoneOff, User } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 type Status = 'idle' | 'connecting' | 'live' | 'error';
 
@@ -144,36 +144,73 @@ const InterviewRoom = () => {
   };
 
   return (
-    <>
-      <AppHeader brandTo={null} eyebrow="Interview room" />
+    <div className="flex min-h-dvh flex-col bg-ink text-ink-foreground">
+      <header className="border-b border-ink-border">
+        <div className="mx-auto flex h-16 w-full max-w-4xl items-center justify-between gap-4 px-6">
+          <Brand />
 
-      <main className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center px-6 text-center">
+          <div className="flex items-center gap-5">
+            {status !== 'live' && (
+              <>
+                <Link
+                  to="/"
+                  className="rounded-md label-mono text-ink-muted outline-none transition-colors hover:text-ink-foreground focus-visible:text-ink-foreground"
+                >
+                  Home
+                </Link>
+                <Link
+                  to="/interviews"
+                  className="rounded-md label-mono text-ink-muted outline-none transition-colors hover:text-ink-foreground focus-visible:text-ink-foreground"
+                >
+                  Past interviews
+                </Link>
+              </>
+            )}
+
+            <span className="flex items-center gap-2 label-mono text-ink-muted">
+              <span
+                className={cn(
+                  'size-1.5 rounded-full',
+                  status === 'live' ? 'animate-pulse-dot bg-brand-light' : 'bg-ink-border',
+                )}
+              />
+              {status === 'live' ? 'Live' : 'Interview room'}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center">
         <audio ref={audioRef} autoPlay className="hidden" />
 
-        <div className="flex items-center gap-12 sm:gap-20">
+        <div className="flex items-start gap-14 sm:gap-24">
           <Seat icon={Bot} name="Interviewer" speaking={interviewerSpeaking} />
           <Seat icon={User} name="You" speaking={!muted && candidateSpeaking} muted={muted} />
         </div>
 
         <p
-          className="mt-12 text-sm text-muted-foreground"
+          className="mt-14 font-display text-xl tracking-[-0.01em] sm:text-2xl"
           role={status === 'error' ? 'alert' : 'status'}
         >
           {statusLine[status]}
         </p>
 
-        <div className="mt-8 flex items-center gap-3">
+        <div className="mt-10 flex items-center gap-3">
           {status === 'live' ? (
             <>
-              <Button type="button" variant="outline" onClick={toggleMute} aria-pressed={muted}>
+              <Button
+                type="button"
+                onClick={toggleMute}
+                aria-pressed={muted}
+                className="h-12 rounded-full border border-ink-border bg-ink-raised px-6 text-ink-foreground hover:bg-ink-border focus-visible:ring-brand-light/40"
+              >
                 {muted ? <MicOff className="size-4" /> : <Mic className="size-4" />}
                 {muted ? 'Unmute' : 'Mute'}
               </Button>
               <Button
                 type="button"
-                variant="outline"
                 onClick={end}
-                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                className="h-12 rounded-full bg-destructive px-6 text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/40"
               >
                 <PhoneOff className="size-4" />
                 End interview
@@ -184,7 +221,7 @@ const InterviewRoom = () => {
               type="button"
               disabled={status === 'connecting'}
               onClick={() => void join()}
-              className="bg-brand text-brand-foreground hover:bg-brand-hover focus-visible:ring-brand/40"
+              className="h-12 rounded-full bg-brand px-7 text-[0.9375rem] font-semibold text-brand-foreground hover:bg-brand-hover focus-visible:ring-brand-light/40"
             >
               <Mic className="size-4" />
               {status === 'connecting'
@@ -196,7 +233,7 @@ const InterviewRoom = () => {
           )}
         </div>
       </main>
-    </>
+    </div>
   );
 };
 
@@ -217,21 +254,28 @@ type SeatProps = {
 
 function Seat({ icon: Icon, name, speaking, muted = false }: SeatProps) {
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-5">
       <span
         className={cn(
-          'relative flex size-24 items-center justify-center rounded-full border-2 transition-colors duration-200',
-          speaking ? 'border-brand text-brand' : 'border-border text-muted-foreground',
+          'relative grid size-28 place-items-center rounded-full border-2 bg-ink-raised transition-all duration-300 sm:size-32',
+          speaking
+            ? 'border-brand-light text-brand-light shadow-[0_0_0_8px_hsl(166_62%_58%/0.12)]'
+            : 'border-ink-border text-ink-muted',
         )}
       >
-        <Icon className="size-9" strokeWidth={1.5} />
+        <Icon className="size-10 sm:size-11" strokeWidth={1.5} />
         {muted && (
-          <span className="absolute -bottom-0.5 -right-0.5 flex size-7 items-center justify-center rounded-full border border-border bg-background text-muted-foreground">
-            <MicOff className="size-3.5" />
+          <span className="absolute -bottom-1 -right-1 grid size-8 place-items-center rounded-full border border-ink-border bg-ink text-ink-muted">
+            <MicOff className="size-4" />
           </span>
         )}
       </span>
-      <span className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-muted-foreground">
+      <span
+        className={cn(
+          'label-mono transition-colors',
+          speaking ? 'text-brand-light' : 'text-ink-muted',
+        )}
+      >
         {name}
       </span>
     </div>

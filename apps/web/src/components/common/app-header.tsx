@@ -14,15 +14,11 @@ export function AppHeader({
   brandTo?: string | null;
 }) {
   return (
-    <header className="border-b border-border bg-background">
+    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-6">
         <Brand to={brandTo} />
         {right ??
-          (eyebrow ? (
-            <span className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-muted-foreground">
-              {eyebrow}
-            </span>
-          ) : null)}
+          (eyebrow ? <span className="label-mono text-muted-foreground">{eyebrow}</span> : null)}
       </div>
     </header>
   );

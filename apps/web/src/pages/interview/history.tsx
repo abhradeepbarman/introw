@@ -36,7 +36,7 @@ const formatDate = (iso: string) =>
   });
 
 const ROW_ACTION =
-  'flex h-11 items-center justify-center gap-2 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/40 disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-3.5';
+  'flex h-12 items-center justify-center gap-2 label-mono text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/40 disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-4';
 
 function InterviewRow({ interview }: { interview: InterviewSummary }) {
   const [busy, setBusy] = useState<'report' | 'transcript' | null>(null);
@@ -60,34 +60,28 @@ function InterviewRow({ interview }: { interview: InterviewSummary }) {
   const hasTranscript = interview.messageCount > 0;
 
   return (
-    <li className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-      <div className="flex items-start justify-between gap-4 px-5 py-4">
-        <div className="min-w-0 space-y-1.5">
-          <p className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground">
-            {formatDate(interview.createdAt)}
-          </p>
-          <p className="truncate text-sm">
+    <li className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_20px_50px_-40px_hsl(196_44%_8%/0.4)]">
+      <div className="flex items-start justify-between gap-4 px-6 py-5">
+        <div className="min-w-0 space-y-2">
+          <p className="label-mono text-muted-foreground">{formatDate(interview.createdAt)}</p>
+          <p className="truncate text-base font-medium">
             {interview.repos.length > 0 ? interview.repos.join(' · ') : 'No repositories recorded'}
           </p>
-          <p className="font-mono text-[0.625rem] uppercase tracking-[0.14em] text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {STATUS_LABEL[interview.status]} · {interview.messageCount} lines
           </p>
         </div>
 
         {interview.hasReport ? (
           <div className="shrink-0 text-right">
-            <p className="font-mono text-lg tabular-nums leading-none">
+            <p className="font-display text-2xl font-bold tabular-nums leading-none tracking-[-0.03em]">
               {interview.score}
-              <span className="text-sm text-muted-foreground"> / 100</span>
+              <span className="font-mono text-sm font-normal text-muted-foreground"> / 100</span>
             </p>
-            <p className="mt-1.5 font-mono text-[0.625rem] uppercase tracking-[0.14em] text-brand">
-              {bandFor(interview.score)}
-            </p>
+            <p className="mt-2 label-mono text-brand">{bandFor(interview.score)}</p>
           </div>
         ) : (
-          <p className="shrink-0 font-mono text-[0.625rem] uppercase tracking-[0.14em] text-muted-foreground">
-            Not scored
-          </p>
+          <p className="shrink-0 label-mono text-muted-foreground">Not scored</p>
         )}
       </div>
 
@@ -201,9 +195,10 @@ function Pagination({
 
 function EmptyState() {
   return (
-    <section className="rounded-xl border border-dashed border-border px-6 py-14 text-center">
-      <p className="text-sm text-muted-foreground">
-        You have not finished an interview yet. Your reports will collect here.
+    <section className="rounded-2xl border border-dashed border-border px-6 py-16 text-center">
+      <p className="font-display text-xl font-semibold tracking-[-0.015em]">No interviews yet.</p>
+      <p className="mx-auto mt-2 max-w-sm text-muted-foreground">
+        Finish one and the report will collect here, with the transcript alongside it.
       </p>
       <Button
         asChild
@@ -290,11 +285,11 @@ const InterviewHistoryPage = () => {
 
         <div className="flex-1 pb-16 pt-6">
           <div className="flex items-baseline justify-between gap-4">
-            <h1 className="text-2xl font-semibold tracking-[-0.02em]">Past interviews</h1>
+            <h1 className="font-display text-[clamp(2rem,4vw,2.75rem)] font-bold tracking-[-0.03em]">
+              Past interviews
+            </h1>
             {result && result.total > 0 && (
-              <span className="font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground">
-                {result.total} total
-              </span>
+              <span className="label-mono text-muted-foreground">{result.total} total</span>
             )}
           </div>
 

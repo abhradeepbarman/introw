@@ -18,16 +18,18 @@ export function AuthShell({ eyebrow, title, subtitle, children, footer }: AuthSh
         <BackLink to="/" label="Home" className="pt-6" />
 
         <div className="flex flex-1 items-center py-8">
-          <section className="w-full overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-            <div className="space-y-2 px-6 pt-7">
-              <h1 className="text-2xl font-semibold leading-tight tracking-[-0.02em]">{title}</h1>
-              <p className="text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
+          <section className="w-full overflow-hidden rounded-2xl border border-border bg-card shadow-[0_28px_70px_-45px_hsl(196_44%_8%/0.4)]">
+            <div className="space-y-2.5 px-7 pt-8">
+              <h1 className="font-display text-3xl font-bold leading-tight tracking-[-0.03em]">
+                {title}
+              </h1>
+              <p className="leading-relaxed text-muted-foreground">{subtitle}</p>
             </div>
 
-            <div className="px-6 py-7">{children}</div>
+            <div className="px-7 py-7">{children}</div>
 
             {footer ? (
-              <div className="border-t border-border px-6 py-4 text-center text-sm text-muted-foreground">
+              <div className="border-t border-border px-7 py-4 text-center text-sm text-muted-foreground">
                 {footer}
               </div>
             ) : null}

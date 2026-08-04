@@ -29,7 +29,7 @@ export function BrandMark({ className }: { className?: string }) {
 
 export function Wordmark({ className }: { className?: string }) {
   return (
-    <span className={cn('text-[0.9375rem] font-semibold tracking-[-0.025em]', className)}>
+    <span className={cn('font-display text-[1.0625rem] font-bold tracking-[-0.03em]', className)}>
       intervue
       <span className="text-brand">.</span>
     </span>

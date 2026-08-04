@@ -81,8 +81,7 @@ const InterviewResultPage = () => {
 export default InterviewResultPage;
 
 const SCORE_HEIGHT = 'h-[clamp(2.75rem,9vw,4rem)]';
-const SECTION_LABEL =
-  'font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground';
+const SECTION_LABEL = 'label-mono text-muted-foreground';
 
 const bandFor = (score: number) => {
   if (score >= 75) return 'Strong';
@@ -95,9 +94,7 @@ function Points({ title, items, dot }: { title: string; items: string[]; dot: st
 
   return (
     <div className="space-y-1.5">
-      <h4 className="font-mono text-[0.625rem] uppercase tracking-[0.14em] text-muted-foreground">
-        {title}
-      </h4>
+      <h4 className="label-mono text-muted-foreground">{title}</h4>
       <ul className="space-y-1">
         {items.map((item) => (
           <li key={item} className="flex gap-2 text-sm leading-relaxed">
@@ -127,9 +124,7 @@ function DimensionRow({ name, dimension }: { name: DimensionKey; dimension: Dime
             <span className="text-muted-foreground"> / 100</span>
           </p>
         ) : (
-          <p className="shrink-0 font-mono text-[0.6875rem] uppercase tracking-[0.14em] text-muted-foreground">
-            Not assessed
-          </p>
+          <p className="shrink-0 label-mono text-muted-foreground">Not assessed</p>
         )}
       </div>
 
@@ -173,7 +168,7 @@ const SPEAKER_LABEL: Record<TranscriptLine['speaker'], string> = {
 };
 
 const FOOTER_ACTION =
-  'flex h-12 items-center justify-center gap-2 font-mono text-[0.6875rem] uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/40 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-3.5';
+  'flex h-14 items-center justify-center gap-2 label-mono text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/40 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4';
 
 function ResultFooter({
   transcript,
@@ -255,7 +250,7 @@ function ResultFooter({
           {transcript.map((line, index) => (
             <li key={`${line.at}-${index}`} className="space-y-1">
               <p
-                className={`font-mono text-[0.625rem] uppercase tracking-[0.14em] ${
+                className={`label-mono ${
                   line.speaker === 'CANDIDATE' ? 'text-brand' : 'text-muted-foreground'
                 }`}
               >
@@ -272,14 +267,10 @@ function ResultFooter({
 
 function ResultCard({ status, children }: { status: string; children: ReactNode }) {
   return (
-    <section className="w-full overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-      <div className="flex items-baseline justify-between px-6 py-4">
-        <h1 className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-muted-foreground">
-          Score
-        </h1>
-        <span className="font-mono text-[0.6875rem] uppercase tracking-[0.18em] text-brand">
-          {status}
-        </span>
+    <section className="w-full overflow-hidden rounded-2xl border border-border bg-card shadow-[0_28px_70px_-45px_hsl(196_44%_8%/0.4)]">
+      <div className="flex items-baseline justify-between px-6 py-5">
+        <h1 className="label-mono text-muted-foreground">Score</h1>
+        <span className="rounded-full bg-brand-wash px-3 py-1 label-mono text-brand">{status}</span>
       </div>
       {children}
     </section>
@@ -347,8 +338,8 @@ function ScoredResult({
   return (
     <ResultCard status={bandFor(score)}>
       <div className="px-6 pb-5">
-        <p className={`flex items-baseline gap-1.5 ${SCORE_HEIGHT}`}>
-          <span className="text-[clamp(2.75rem,9vw,4rem)] font-semibold leading-none tracking-[-0.03em] tabular-nums">
+        <p className={`flex items-baseline gap-2 ${SCORE_HEIGHT}`}>
+          <span className="font-display text-[clamp(3rem,10vw,4.5rem)] font-bold leading-none tracking-[-0.04em] tabular-nums">
             {score}
           </span>
           <span className="font-mono text-sm text-muted-foreground">/ 100</span>
