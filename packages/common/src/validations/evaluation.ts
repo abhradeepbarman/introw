@@ -44,7 +44,6 @@ export const DIMENSIONS: Record<DimensionKey, { label: string; blurb: string }> 
 
 export const DIMENSION_KEYS = Object.keys(DIMENSIONS) as DimensionKey[];
 
-/** How far the model's overall score may sit from its own dimension scores before we distrust it. */
 const MAX_SCORE_DRIFT = 15;
 export const settleScore = (evaluation: Evaluation): number => {
   const scores = DIMENSION_KEYS.map((key) => evaluation[key]?.score).filter(

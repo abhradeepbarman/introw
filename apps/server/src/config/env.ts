@@ -22,6 +22,10 @@ const _envConfig = {
     process.env.GOOGLE_AUTH_REDIRECT_URI ||
     `http://localhost:${Number(process.env.PORT) || 9000}/api/v1/auth/google/callback`,
 
+  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
+  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
+  STRIPE_STARTER_PRICE_ID: process.env.STRIPE_STARTER_PRICE_ID || '',
+
   SMTP_HOST: process.env.SMTP_HOST || '',
   SMTP_PORT: Number(process.env.SMTP_PORT) || 587,
   SMTP_USER: process.env.SMTP_USER || '',
