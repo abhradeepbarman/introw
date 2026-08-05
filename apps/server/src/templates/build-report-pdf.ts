@@ -124,6 +124,20 @@ const writeScoreBar = (layout: Layout, score: number) => {
   layout.y -= 10;
 };
 
+const writePoints = (layout: Layout, heading: string, items: string[]) => {
+  if (items.length === 0) return;
+
+  ensureRoom(layout, 24 + items.length * 16);
+  writeText(layout, heading, { font: layout.bold, size: 8, color: MUTED });
+  gap(layout, 4);
+
+  for (const item of items) {
+    writeText(layout, `-  ${item}`, { size: 10, indent: 8 });
+  }
+
+  gap(layout, 12);
+};
+
 export type ReportInput = {
   id: string;
   createdAt: Date;
@@ -165,28 +179,35 @@ export const buildReportPdf = async (interview: ReportInput): Promise<Uint8Array
 
   gap(layout, 20);
 
-  if (interview.rubric) {
+  const { rubric } = interview;
+
+  if (rubric) {
     writeText(layout, 'BREAKDOWN', { font: layout.bold, size: 8, color: MUTED });
     gap(layout, 8);
     writeRule(layout);
 
     for (const key of DIMENSION_KEYS) {
-      const dimension = interview.rubric[key];
+      const dimension = rubric[key];
 
       ensureRoom(layout, 90);
       writeText(layout, DIMENSIONS[key].label, { font: layout.bold, size: 12.5 });
       gap(layout, 2);
-      writeText(layout, dimension.assessed ? `${dimension.score} / 100` : 'Not assessed', {
+
+      if (!dimension) {
+        writeText(layout, 'Not assessed', { font: layout.bold, size: 9.5, color: MUTED });
+        gap(layout, 10);
+        writeRule(layout);
+        continue;
+      }
+
+      writeText(layout, `${dimension.score} / 100`, {
         font: layout.bold,
         size: 9.5,
-        color: dimension.assessed ? BRAND : MUTED,
+        color: BRAND,
       });
       gap(layout, 6);
-
-      if (dimension.assessed) {
-        writeScoreBar(layout, dimension.score);
-        gap(layout, 4);
-      }
+      writeScoreBar(layout, dimension.score);
+      gap(layout, 4);
 
       writeText(layout, dimension.summary, { color: MUTED });
       gap(layout, 8);
@@ -196,29 +217,12 @@ export const buildReportPdf = async (interview: ReportInput): Promise<Uint8Array
         gap(layout, 4);
       }
 
-      if (dimension.evidence.length > 0) gap(layout, 4);
-
-      if (dimension.strengths.length > 0) {
-        writeText(layout, 'DID WELL', { font: layout.bold, size: 8, color: MUTED });
-        gap(layout, 4);
-        for (const item of dimension.strengths) {
-          writeText(layout, `-  ${item}`, { size: 10, indent: 8 });
-        }
-        gap(layout, 6);
-      }
-
-      if (dimension.improvements.length > 0) {
-        writeText(layout, 'WORK ON', { font: layout.bold, size: 8, color: MUTED });
-        gap(layout, 4);
-        for (const item of dimension.improvements) {
-          writeText(layout, `-  ${item}`, { size: 10, indent: 8 });
-        }
-        gap(layout, 6);
-      }
-
       gap(layout, 10);
       writeRule(layout);
     }
+
+    writePoints(layout, 'DID WELL', rubric.strengths);
+    writePoints(layout, 'WORK ON', rubric.improvements);
   }
 
   ensureRoom(layout, 80);

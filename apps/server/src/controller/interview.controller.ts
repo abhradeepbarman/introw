@@ -7,11 +7,11 @@ import axios from 'axios';
 import envConfig from '../config/env';
 import { prisma } from '../lib/prisma';
 import asyncHandler from '../utils/async-handler';
-import { buildReportPdf } from '../utils/build-report-pdf';
 import CustomErrorHandler from '../utils/custom-error-handler';
 import { evaluateInterview } from '../utils/evaluate-interview';
 import ResponseHandler from '../utils/response-handler';
-import { initSideband } from '../utils/sideband';
+import { initSideband } from '../lib/sideband';
+import { buildReportPdf } from '../templates';
 
 type GithubRepo = {
   name: string;
@@ -174,9 +174,8 @@ export const listInterviews = asyncHandler(async (req, res) => {
         id: true,
         createdAt: true,
         status: true,
-        score: true,
-        feedback: true,
         githubMetadata: true,
+        result: { select: { score: true } },
         _count: { select: { conversations: true } },
       },
     }),
@@ -189,8 +188,8 @@ export const listInterviews = asyncHandler(async (req, res) => {
       id: interview.id,
       createdAt: interview.createdAt,
       status: interview.status,
-      score: interview.score,
-      hasReport: interview.status === 'COMPLETED' && Boolean(interview.feedback),
+      score: interview.result?.score ?? 0,
+      hasReport: Boolean(interview.result),
       repos: repos.slice(0, 3).map((repo) => repo.name),
       messageCount: interview._count.conversations,
     };
@@ -212,23 +211,24 @@ export const downloadReport = asyncHandler(async (req, res, next) => {
 
   const interview = await prisma.interview.findFirst({
     where: ownedBy(interviewId, req.user.id),
+    include: { result: true },
   });
 
   if (!interview) {
     return next(CustomErrorHandler.notFound('Interview not found'));
   }
 
-  if (interview.status !== 'COMPLETED' || !interview.feedback) {
+  if (!interview.result) {
     return next(CustomErrorHandler.badRequest('This interview has not been evaluated yet'));
   }
 
-  const stored = rubricSchema.safeParse(interview.rubric);
+  const stored = rubricSchema.safeParse(interview.result.rubric);
 
   const pdf = await buildReportPdf({
     id: interview.id,
     createdAt: interview.createdAt,
-    score: interview.score,
-    feedback: interview.feedback,
+    score: interview.result.score,
+    feedback: interview.result.feedback,
     rubric: stored.success ? stored.data : null,
   });
 
@@ -283,7 +283,7 @@ export const getInterviewResult = asyncHandler(async (req, res, next) => {
 
   const interview = await prisma.interview.findFirst({
     where: ownedBy(interviewId, req.user.id),
-    include: { conversations: { orderBy: { createdAt: 'asc' } } },
+    include: { conversations: { orderBy: { createdAt: 'asc' } }, result: true },
   });
 
   if (!interview) {
@@ -296,13 +296,13 @@ export const getInterviewResult = asyncHandler(async (req, res, next) => {
     at: m.createdAt,
   }));
 
-  if (interview.status === 'COMPLETED' && interview.feedback) {
-    const stored = rubricSchema.safeParse(interview.rubric);
+  if (interview.result) {
+    const stored = rubricSchema.safeParse(interview.result.rubric);
 
     return res.status(200).send(
       ResponseHandler(200, 'Interview result', {
-        score: interview.score,
-        feedback: interview.feedback,
+        score: interview.result.score,
+        feedback: interview.result.feedback,
         rubric: stored.success ? stored.data : null,
         transcript,
       }),
@@ -317,10 +317,10 @@ export const getInterviewResult = asyncHandler(async (req, res, next) => {
 
   const { score, feedback, rubric } = await evaluateInterview(interview.conversations);
 
-  await prisma.interview.update({
-    where: { id: interviewId },
-    data: { score, feedback, rubric, status: 'COMPLETED' },
-  });
+  await prisma.$transaction([
+    prisma.interviewResult.create({ data: { interviewId, score, feedback, rubric } }),
+    prisma.interview.update({ where: { id: interviewId }, data: { status: 'COMPLETED' } }),
+  ]);
 
   return res.status(200).send(
     ResponseHandler(200, 'Interview evaluated successfully', {

@@ -1,57 +1,59 @@
 import { z } from 'zod';
 
 const dimensionSchema = z.object({
-  assessed: z.boolean(),
-  summary: z.string().trim().min(1),
-  evidence: z.array(z.string().trim().min(1)).max(3),
-  strengths: z.array(z.string().trim().min(1)).max(3),
-  improvements: z.array(z.string().trim().min(1)).max(3),
   score: z.number().int().min(0).max(100),
+  summary: z.string().trim().min(1),
+  evidence: z.array(z.string().trim().min(1)).max(2),
 });
 
 export type Dimension = z.infer<typeof dimensionSchema>;
 
 export const rubricSchema = z.object({
-  clarity: dimensionSchema,
-  technicalCorrectness: dimensionSchema,
-  structure: dimensionSchema,
-  feedback: z.string().trim().min(1),
+  technicalCorrectness: dimensionSchema.optional(),
+  clarity: dimensionSchema.optional(),
+  structure: dimensionSchema.optional(),
+  strengths: z.array(z.string().trim().min(1)).max(3),
+  improvements: z.array(z.string().trim().min(1)).max(3),
 });
 
 export type Rubric = z.infer<typeof rubricSchema>;
 
-export type DimensionKey = Exclude<keyof Rubric, 'feedback'>;
+export const evaluationSchema = rubricSchema.extend({
+  overall: z.number().int().min(0).max(100),
+  feedback: z.string().trim().min(1),
+});
 
-export const DIMENSIONS: Record<DimensionKey, { label: string; blurb: string; weight: number }> = {
+export type Evaluation = z.infer<typeof evaluationSchema>;
+
+export type DimensionKey = 'technicalCorrectness' | 'clarity' | 'structure';
+
+export const DIMENSIONS: Record<DimensionKey, { label: string; blurb: string }> = {
   technicalCorrectness: {
     label: 'Technical correctness',
     blurb: 'Accuracy and depth of the technical claims made',
-    weight: 0.5,
   },
   clarity: {
     label: 'Clarity',
     blurb: 'How understandable the answers were to a listener',
-    weight: 0.25,
   },
   structure: {
     label: 'Structure (STAR)',
     blurb: 'Situation, Task, Action, Result on behavioural answers',
-    weight: 0.25,
   },
 };
 
 export const DIMENSION_KEYS = Object.keys(DIMENSIONS) as DimensionKey[];
 
-export const compositeScore = (rubric: Rubric): number => {
-  const assessed = DIMENSION_KEYS.filter((key) => rubric[key].assessed);
-  const totalWeight = assessed.reduce((sum, key) => sum + DIMENSIONS[key].weight, 0);
-
-  if (totalWeight === 0) return 0;
-
-  const weighted = assessed.reduce(
-    (sum, key) => sum + rubric[key].score * DIMENSIONS[key].weight,
-    0,
+/** How far the model's overall score may sit from its own dimension scores before we distrust it. */
+const MAX_SCORE_DRIFT = 15;
+export const settleScore = (evaluation: Evaluation): number => {
+  const scores = DIMENSION_KEYS.map((key) => evaluation[key]?.score).filter(
+    (score): score is number => score !== undefined,
   );
 
-  return Math.round(weighted / totalWeight);
+  if (scores.length === 0) return evaluation.overall;
+
+  const mean = Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
+
+  return Math.abs(evaluation.overall - mean) > MAX_SCORE_DRIFT ? mean : evaluation.overall;
 };

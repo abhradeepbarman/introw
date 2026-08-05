@@ -13,10 +13,6 @@ import {
 
 const isProduction = () => envConfig.NODE_ENV === 'production';
 
-/**
- * Cookie flags must match exactly between set and clear, otherwise the browser
- * keeps the original cookie and logout silently leaves the session alive.
- */
 export const cookieOptions = (maxAge: number) => ({
   httpOnly: true,
   maxAge,

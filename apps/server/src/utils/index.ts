@@ -4,5 +4,4 @@ export { default as ResponseHandler } from './response-handler';
 export * from './evaluate-interview';
 export * from './format-error';
 export * from './logger';
-export * from './sideband';
 export * from './tokens';

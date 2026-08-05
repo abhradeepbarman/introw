@@ -107,9 +107,8 @@ function Points({ title, items, dot }: { title: string; items: string[]; dot: st
   );
 }
 
-function DimensionRow({ name, dimension }: { name: DimensionKey; dimension: Dimension }) {
+function DimensionRow({ name, dimension }: { name: DimensionKey; dimension?: Dimension }) {
   const { label, blurb } = DIMENSIONS[name];
-  const { assessed, score, summary, evidence, strengths, improvements } = dimension;
 
   return (
     <li className="space-y-3 py-5 first:pt-0 last:pb-0">
@@ -118,9 +117,9 @@ function DimensionRow({ name, dimension }: { name: DimensionKey; dimension: Dime
           <h3 className="text-sm font-medium">{label}</h3>
           <p className="text-xs text-muted-foreground">{blurb}</p>
         </div>
-        {assessed ? (
+        {dimension ? (
           <p className="shrink-0 font-mono text-sm tabular-nums">
-            {score}
+            {dimension.score}
             <span className="text-muted-foreground"> / 100</span>
           </p>
         ) : (
@@ -129,34 +128,31 @@ function DimensionRow({ name, dimension }: { name: DimensionKey; dimension: Dime
       </div>
 
       <div className="h-px bg-muted" role="presentation">
-        {assessed && (
+        {dimension && (
           <div
             className="h-full bg-brand transition-[width] duration-700 ease-out"
-            style={{ width: `${score}%` }}
+            style={{ width: `${dimension.score}%` }}
           />
         )}
       </div>
 
-      <p className="text-sm leading-relaxed text-muted-foreground">{summary}</p>
+      {dimension && (
+        <>
+          <p className="text-sm leading-relaxed text-muted-foreground">{dimension.summary}</p>
 
-      {evidence.length > 0 && (
-        <ul className="space-y-2">
-          {evidence.map((quote) => (
-            <li
-              key={quote}
-              className="border-l-2 border-border pl-3 text-sm italic leading-relaxed text-muted-foreground"
-            >
-              “{quote}”
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {(strengths.length > 0 || improvements.length > 0) && (
-        <div className="grid gap-4 pt-1 sm:grid-cols-2">
-          <Points title="Did well" items={strengths} dot="bg-brand" />
-          <Points title="Work on" items={improvements} dot="bg-muted-foreground" />
-        </div>
+          {dimension.evidence.length > 0 && (
+            <ul className="space-y-2">
+              {dimension.evidence.map((quote) => (
+                <li
+                  key={quote}
+                  className="border-l-2 border-border pl-3 text-sm italic leading-relaxed text-muted-foreground"
+                >
+                  “{quote}”
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
     </li>
   );
@@ -362,6 +358,13 @@ function ScoredResult({
                 <DimensionRow key={key} name={key} dimension={rubric[key]} />
               ))}
             </ul>
+          </div>
+        )}
+
+        {rubric && (rubric.strengths.length > 0 || rubric.improvements.length > 0) && (
+          <div className="grid gap-6 sm:grid-cols-2">
+            <Points title="Did well" items={rubric.strengths} dot="bg-brand" />
+            <Points title="Work on" items={rubric.improvements} dot="bg-muted-foreground" />
           </div>
         )}
 

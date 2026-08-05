@@ -64,7 +64,7 @@ const STEPS = [
   {
     icon: ScrollText,
     title: 'Read the verdict',
-    body: 'Five scored dimensions, quotes pulled from your answers as evidence, and a report you can download.',
+    body: 'Three scored dimensions, quotes pulled from your answers as evidence, and a report you can download.',
   },
 ];
 
