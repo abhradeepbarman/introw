@@ -5,13 +5,14 @@ import {
 } from '@repo/common/validations';
 import axios from 'axios';
 import envConfig from '../config/env';
+import { PLANS } from '../constants';
 import { prisma } from '../lib/prisma';
+import { initSideband } from '../lib/sideband';
+import { buildReportPdf } from '../templates';
 import asyncHandler from '../utils/async-handler';
 import CustomErrorHandler from '../utils/custom-error-handler';
 import { evaluateInterview } from '../utils/evaluate-interview';
 import ResponseHandler from '../utils/response-handler';
-import { initSideband } from '../lib/sideband';
-import { buildReportPdf } from '../templates';
 
 type GithubRepo = {
   name: string;
@@ -135,6 +136,33 @@ export const createSession = asyncHandler(async (req, res, next) => {
     return next(CustomErrorHandler.notFound('Interview not found'));
   }
 
+  if (interview.status === 'COMPLETED') {
+    return next(CustomErrorHandler.badRequest('This interview has already ended'));
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { plan: true, credits: true },
+  });
+
+  const isFirstStart = interview.startedAt === null;
+  if (isFirstStart && (user?.credits ?? 0) <= 0) {
+    return next(CustomErrorHandler.badRequest('You have no interview credits left'));
+  }
+
+  const maxTime = isFirstStart
+    ? PLANS[user?.plan ?? 'FREE'].maxInterviewMinutes * 60
+    : interview.maxTime;
+
+  const elapsed = isFirstStart
+    ? 0
+    : Math.floor((Date.now() - interview.startedAt!.getTime()) / 1000);
+  const remaining = maxTime - elapsed;
+
+  if (remaining <= 0) {
+    return next(CustomErrorHandler.badRequest('This interview has run out of time'));
+  }
+
   const fd = new FormData();
   fd.set('sdp', req.body);
   fd.set('session', JSON.stringify(sessionConfig));
@@ -154,9 +182,26 @@ export const createSession = asyncHandler(async (req, res, next) => {
 
   if (!callId) return next(CustomErrorHandler.notAllowed('Call ID not found in response'));
 
-  await initSideband(callId, interview);
+  await prisma.$transaction([
+    prisma.interview.update({
+      where: { id: interview.id },
+      data: {
+        status: 'IN_PROGRESS',
+        callId,
+        maxTime,
+        ...(isFirstStart && { startedAt: new Date() }),
+      },
+    }),
+    ...(isFirstStart
+      ? [prisma.user.update({ where: { id: userId }, data: { credits: { decrement: 1 } } })]
+      : []),
+  ]);
 
-  return res.status(200).send(ResponseHandler(200, 'Session created successfully', { sdp }));
+  await initSideband(callId, interview, remaining);
+
+  return res
+    .status(200)
+    .send(ResponseHandler(200, 'Session created successfully', { sdp, remainingTime: remaining }));
 });
 
 export const listInterviews = asyncHandler(async (req, res) => {

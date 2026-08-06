@@ -2,6 +2,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { type Application } from 'express';
 import envConfig from './config/env';
+import { startInterviewExpiryJob } from './jobs/expire-interviews';
 import errorHandler from './middlewares/error-handler';
 import CustomErrorHandler from './utils/custom-error-handler';
 import { logger } from './utils/logger';
@@ -34,6 +35,7 @@ app.use(errorHandler);
 
 app.listen(envConfig.PORT, () => {
   logger.info(`Server is running on port ${envConfig.PORT}`);
+  startInterviewExpiryJob();
 });
 
 export default app;

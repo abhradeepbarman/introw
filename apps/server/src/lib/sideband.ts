@@ -10,7 +10,43 @@ type GithubRepo = {
   description: string | null;
 };
 
-export const initSideband = async (callId: string, interview: Interview) => {
+const liveSessions = new Map<string, WebSocket>();
+
+export const sendWrapUpInstruction = (interviewId: string) => {
+  const ws = liveSessions.get(interviewId);
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+  liveSessions.delete(interviewId);
+
+  ws.send(
+    JSON.stringify({
+      type: 'response.create',
+      response: {
+        instructions:
+          'Time is almost up. Do not ask another question — thank the candidate briefly and close out the interview now.',
+      },
+    }),
+  );
+};
+
+const describeDuration = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 1) return `${seconds} seconds`;
+  return minutes === 1 ? '1 minute' : `${minutes} minutes`;
+};
+
+export const hangupCall = async (callId: string) => {
+  const response = await fetch(`https://api.openai.com/v1/realtime/calls/${callId}/hangup`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${envConfig.OPENAI_API_KEY}` },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Hangup failed with ${response.status}: ${await response.text()}`);
+  }
+};
+
+export const initSideband = async (callId: string, interview: Interview, remainingTime: number) => {
   const ws = new WebSocket(`wss://api.openai.com/v1/realtime?call_id=${callId}`, {
     headers: {
       Authorization: `Bearer ${envConfig.OPENAI_API_KEY}`,
@@ -49,6 +85,11 @@ export const initSideband = async (callId: string, interview: Interview) => {
           type: 'realtime',
           instructions: `You are an AI interviewer conducting a technical interview.
 
+            You have ${describeDuration(remainingTime)} in total. Pace yourself so you can
+            cover ground and still close cleanly — keep your questions and answers short,
+            and do not open a new line of questioning near the end. You will be told when
+            it is time to wrap up.
+
             Ask one question at a time.
             Evaluate the candidate.
             Ask follow-up questions.
@@ -58,6 +99,8 @@ export const initSideband = async (callId: string, interview: Interview) => {
         },
       }),
     );
+
+    liveSessions.set(interview.id, ws);
   });
 
   ws.on('message', (message) => {
@@ -97,6 +140,7 @@ export const initSideband = async (callId: string, interview: Interview) => {
 
   ws.on('close', async () => {
     console.log('❌ Sideband disconnected');
+    liveSessions.delete(interview.id);
     await writeQueue;
   });
 };

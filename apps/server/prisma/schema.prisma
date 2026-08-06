@@ -43,6 +43,9 @@ model Interview {
   id             String           @id @default(uuid())
   githubMetadata Json
   status         InterviewStatus  @default(PENDING)
+  callId         String?
+  startedAt      DateTime?
+  maxTime        Int              @default(0)
   createdAt      DateTime         @default(now())
   user           User?            @relation(fields: [userId], references: [id])
   userId         String?

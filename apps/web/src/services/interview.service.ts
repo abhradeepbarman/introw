@@ -12,6 +12,7 @@ export type CreateInterviewResponse = {
 
 export type InterviewSessionResponse = {
   sdp: string;
+  remainingTime: number;
 };
 
 export type InterviewResult = {

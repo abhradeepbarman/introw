@@ -20,8 +20,8 @@ export const PLANS = {
     price: 0,
     currency: 'INR',
     credits: 1,
-    maxInterviewMinutes: 5,
-    features: ['1 interview credit', 'Max interview: 5 minutes'],
+    maxInterviewMinutes: 2,
+    features: ['1 interview credit', 'Max interview: 2 minutes'],
   },
   STARTER: {
     id: 'STARTER',
