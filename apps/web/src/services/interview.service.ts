@@ -36,7 +36,6 @@ export type InterviewSummary = {
   status: InterviewStatus;
   score: number;
   hasReport: boolean;
-  repos: string[];
   messageCount: number;
 };
 

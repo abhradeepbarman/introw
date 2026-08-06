@@ -64,9 +64,6 @@ function InterviewRow({ interview }: { interview: InterviewSummary }) {
       <div className="flex items-start justify-between gap-4 px-6 py-5">
         <div className="min-w-0 space-y-2">
           <p className="label-mono text-muted-foreground">{formatDate(interview.createdAt)}</p>
-          <p className="truncate text-base font-medium">
-            {interview.repos.length > 0 ? interview.repos.join(' · ') : 'No repositories recorded'}
-          </p>
           <p className="text-sm text-muted-foreground">
             {STATUS_LABEL[interview.status]} · {interview.messageCount} lines
           </p>

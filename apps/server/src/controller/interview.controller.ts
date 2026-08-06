@@ -219,26 +219,20 @@ export const listInterviews = asyncHandler(async (req, res) => {
         id: true,
         createdAt: true,
         status: true,
-        githubMetadata: true,
         result: { select: { score: true } },
         _count: { select: { conversations: true } },
       },
     }),
   ]);
 
-  const items = interviews.map((interview) => {
-    const repos = (interview.githubMetadata as GithubRepo[] | null) ?? [];
-
-    return {
-      id: interview.id,
-      createdAt: interview.createdAt,
-      status: interview.status,
-      score: interview.result?.score ?? 0,
-      hasReport: Boolean(interview.result),
-      repos: repos.slice(0, 3).map((repo) => repo.name),
-      messageCount: interview._count.conversations,
-    };
-  });
+  const items = interviews.map((interview) => ({
+    id: interview.id,
+    createdAt: interview.createdAt,
+    status: interview.status,
+    score: interview.result?.score ?? 0,
+    hasReport: Boolean(interview.result),
+    messageCount: interview._count.conversations,
+  }));
 
   return res.status(200).send(
     ResponseHandler(200, 'Interviews fetched successfully', {
