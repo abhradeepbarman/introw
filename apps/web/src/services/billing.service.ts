@@ -15,6 +15,9 @@ export type Plan = {
 export type Subscription = {
   plan: Plan;
   credits: number;
+  freeCredits: number;
+  paidCredits: number;
+  nextInterviewMinutes: number;
   renewsAt: string | null;
 };
 

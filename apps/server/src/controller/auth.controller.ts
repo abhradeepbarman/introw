@@ -39,7 +39,8 @@ type SessionUser = {
   name: string;
   email: string;
   authProvider: AuthProvider;
-  credits: number;
+  freeCredits: number;
+  paidCredits: number;
 };
 
 const issueSession = async (res: Response, userId: string) => {
@@ -59,7 +60,7 @@ const sessionPayload = (user: SessionUser, accessToken: string) => ({
   name: user.name,
   email: user.email,
   authProvider: user.authProvider,
-  credits: user.credits,
+  credits: user.freeCredits + user.paidCredits,
   access_token: accessToken,
 });
 

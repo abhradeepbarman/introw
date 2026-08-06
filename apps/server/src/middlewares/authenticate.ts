@@ -12,7 +12,7 @@ const readToken = (req: Request) => {
   return req.cookies?.[ACCESS_TOKEN_COOKIE] as string | undefined;
 };
 
-const authenticate = asyncHandler(async (req: Request, _res: Response, next: NextFunction) => {
+const auth = asyncHandler(async (req: Request, _res: Response, next: NextFunction) => {
   const token = readToken(req);
   if (!token) {
     return next(CustomErrorHandler.unAuthorized());
@@ -25,15 +25,23 @@ const authenticate = asyncHandler(async (req: Request, _res: Response, next: Nex
 
   const user = await prisma.user.findUnique({
     where: { id: decoded.id },
-    select: { id: true, name: true, email: true, authProvider: true, credits: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      authProvider: true,
+      freeCredits: true,
+      paidCredits: true,
+    },
   });
 
   if (!user) {
     return next(CustomErrorHandler.unAuthorized());
   }
 
-  req.user = user;
+  const { freeCredits, paidCredits, ...rest } = user;
+  req.user = { ...rest, credits: freeCredits + paidCredits };
   return next();
 });
 
-export default authenticate;
+export default auth;

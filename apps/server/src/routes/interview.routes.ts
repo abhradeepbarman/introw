@@ -7,15 +7,15 @@ import {
   getInterviewResult,
   listInterviews,
 } from '../controller/interview.controller';
-import authenticate from '../middlewares/authenticate';
+import auth from '../middlewares/authenticate';
 
 const router = Router();
 
-router.post('/', authenticate, createInterview);
-router.get('/', authenticate, listInterviews);
-router.post('/:id/session', authenticate, createSession);
-router.post('/:id/result', authenticate, getInterviewResult);
-router.get('/:id/report', authenticate, downloadReport);
-router.get('/:id/transcript', authenticate, downloadTranscript);
+router.post('/', auth, createInterview);
+router.get('/', auth, listInterviews);
+router.post('/:id/session', auth, createSession);
+router.post('/:id/result', auth, getInterviewResult);
+router.get('/:id/report', auth, downloadReport);
+router.get('/:id/transcript', auth, downloadTranscript);
 
 export default router;

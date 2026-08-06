@@ -17,7 +17,7 @@ export const listPlans = asyncHandler(async (_req, res) => {
 export const getSubscription = asyncHandler(async (req, res, next) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user.id },
-    select: { plan: true, credits: true, planExpiresAt: true },
+    select: { plan: true, freeCredits: true, paidCredits: true, planExpiresAt: true },
   });
 
   if (!user) {
@@ -27,7 +27,12 @@ export const getSubscription = asyncHandler(async (req, res, next) => {
   return res.status(200).send(
     ResponseHandler(200, 'Subscription fetched successfully', {
       plan: PLANS[user.plan],
-      credits: user.credits,
+      credits: user.freeCredits + user.paidCredits,
+      freeCredits: user.freeCredits,
+      paidCredits: user.paidCredits,
+      // Duration follows the credit that will actually be spent, not the plan.
+      nextInterviewMinutes:
+        PLANS[user.paidCredits > 0 ? 'STARTER' : 'FREE'].maxInterviewMinutes,
       renewsAt: user.planExpiresAt,
     }),
   );
@@ -100,7 +105,7 @@ const syncSubscription = async (subscription: Stripe.Subscription) => {
 
   const user = await prisma.user.findUnique({
     where: { stripeCustomerId: customerId },
-    select: { id: true, planExpiresAt: true, credits: true },
+    select: { id: true, planExpiresAt: true },
   });
 
   if (!user) return;
@@ -108,6 +113,7 @@ const syncSubscription = async (subscription: Stripe.Subscription) => {
   const isActive = subscription.status === 'active' || subscription.status === 'trialing';
 
   if (!isActive) {
+    // Paid credits are kept — they were bought, and they stay 5-minute interviews.
     await prisma.user.update({
       where: { id: user.id },
       data: { plan: 'FREE', stripeSubscriptionId: null, planExpiresAt: null },
@@ -117,6 +123,9 @@ const syncSubscription = async (subscription: Stripe.Subscription) => {
 
   const periodEnd = subscription.items.data[0]?.current_period_end;
   const expiresAt = periodEnd ? new Date(periodEnd * 1000) : null;
+
+  // Only a fresh billing period grants credits. Stripe fires `subscription.updated` for
+  // unrelated reasons (card changes, metadata edits) and those must not top anyone up.
   const isNewPeriod = user.planExpiresAt?.getTime() !== expiresAt?.getTime();
 
   await prisma.user.update({
@@ -125,7 +134,7 @@ const syncSubscription = async (subscription: Stripe.Subscription) => {
       plan: 'STARTER',
       stripeSubscriptionId: subscription.id,
       planExpiresAt: expiresAt,
-      credits: isNewPeriod ? PLANS.STARTER.credits : user.credits + PLANS.STARTER.credits,
+      ...(isNewPeriod && { paidCredits: PLANS.STARTER.credits }),
     },
   });
 };

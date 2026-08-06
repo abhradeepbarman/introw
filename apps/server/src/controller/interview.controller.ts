@@ -142,16 +142,22 @@ export const createSession = asyncHandler(async (req, res, next) => {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { plan: true, credits: true },
+    select: { freeCredits: true, paidCredits: true },
   });
 
   const isFirstStart = interview.startedAt === null;
-  if (isFirstStart && (user?.credits ?? 0) <= 0) {
+
+  // Paid credits are spent first, and the bucket the credit came from sets the duration —
+  // so a leftover free credit stays a 2-minute interview even on the Starter plan, and a
+  // paid credit stays a 5-minute one even after the subscription lapses.
+  const usePaidCredit = (user?.paidCredits ?? 0) > 0;
+
+  if (isFirstStart && !usePaidCredit && (user?.freeCredits ?? 0) <= 0) {
     return next(CustomErrorHandler.badRequest('You have no interview credits left'));
   }
 
   const maxTime = isFirstStart
-    ? PLANS[user?.plan ?? 'FREE'].maxInterviewMinutes * 60
+    ? PLANS[usePaidCredit ? 'STARTER' : 'FREE'].maxInterviewMinutes * 60
     : interview.maxTime;
 
   const elapsed = isFirstStart
@@ -193,7 +199,12 @@ export const createSession = asyncHandler(async (req, res, next) => {
       },
     }),
     ...(isFirstStart
-      ? [prisma.user.update({ where: { id: userId }, data: { credits: { decrement: 1 } } })]
+      ? [
+          prisma.user.update({
+            where: { id: userId },
+            data: usePaidCredit ? { paidCredits: { decrement: 1 } } : { freeCredits: { decrement: 1 } },
+          }),
+        ]
       : []),
   ]);
 

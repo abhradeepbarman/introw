@@ -13,7 +13,8 @@ model User {
   email        String       @unique
   password     String?
   authProvider AuthProvider @default(LOCAL)
-  credits      Int          @default(1)
+  freeCredits  Int          @default(1)
+  paidCredits  Int          @default(0)
   refreshToken String?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt

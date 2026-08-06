@@ -40,7 +40,8 @@ function CurrentPlan({
   onManage: () => void;
   busy: boolean;
 }) {
-  const { plan, credits, renewsAt } = subscription;
+  const { plan, credits, freeCredits, paidCredits, nextInterviewMinutes, renewsAt } = subscription;
+  const mixedCredits = freeCredits > 0 && paidCredits > 0;
 
   return (
     <section className="overflow-hidden rounded-2xl bg-ink text-ink-foreground shadow-[0_30px_80px_-40px_hsl(196_44%_8%/0.55)]">
@@ -55,7 +56,7 @@ function CurrentPlan({
         <div>
           <p className="font-display text-3xl font-bold tracking-[-0.03em]">{plan.name}</p>
           <p className="mt-2 text-ink-muted">
-            Interviews run up to {plan.maxInterviewMinutes} minutes.
+            Your next interview runs up to {nextInterviewMinutes} minutes.
           </p>
         </div>
 
@@ -66,6 +67,11 @@ function CurrentPlan({
           <p className="mt-2 label-mono text-ink-muted">
             {credits === 1 ? 'credit left' : 'credits left'}
           </p>
+          {mixedCredits && (
+            <p className="mt-1.5 font-mono text-[0.6875rem] text-ink-muted">
+              incl. {freeCredits} shorter free {freeCredits === 1 ? 'credit' : 'credits'}, used last
+            </p>
+          )}
         </div>
       </div>
 

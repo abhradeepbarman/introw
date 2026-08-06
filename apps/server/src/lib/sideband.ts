@@ -23,7 +23,7 @@ export const sendWrapUpInstruction = (interviewId: string) => {
       type: 'response.create',
       response: {
         instructions:
-          'Time is almost up. Do not ask another question — thank the candidate briefly and close out the interview now.',
+          'Time is almost up. Do not ask another question STRICTLY after that — thank the candidate briefly and close out the interview now.',
       },
     }),
   );

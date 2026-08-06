@@ -10,7 +10,7 @@ import {
   userLogout,
   userRegister,
 } from '../controller/auth.controller';
-import authenticate from '../middlewares/authenticate';
+import auth from '../middlewares/authenticate';
 
 const router = Router();
 
@@ -23,7 +23,7 @@ router.post('/reset-password/:token', resetPassword);
 router.get('/google', googleLogin);
 router.get('/google/callback', googleCallback);
 
-router.get('/me', authenticate, getCurrentUser);
-router.post('/logout', authenticate, userLogout);
+router.get('/me', auth, getCurrentUser);
+router.post('/logout', auth, userLogout);
 
 export default router;
