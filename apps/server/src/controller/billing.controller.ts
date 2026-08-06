@@ -5,6 +5,7 @@ import { prisma } from '../lib/prisma';
 import { stripe } from '../lib/stripe';
 import asyncHandler from '../utils/async-handler';
 import CustomErrorHandler from '../utils/custom-error-handler';
+import { logger } from '../utils/logger';
 import ResponseHandler from '../utils/response-handler';
 
 export const listPlans = asyncHandler(async (_req, res) => {
@@ -99,7 +100,7 @@ const syncSubscription = async (subscription: Stripe.Subscription) => {
 
   const user = await prisma.user.findUnique({
     where: { stripeCustomerId: customerId },
-    select: { id: true, planExpiresAt: true },
+    select: { id: true, planExpiresAt: true, credits: true },
   });
 
   if (!user) return;
@@ -124,7 +125,7 @@ const syncSubscription = async (subscription: Stripe.Subscription) => {
       plan: 'STARTER',
       stripeSubscriptionId: subscription.id,
       planExpiresAt: expiresAt,
-      ...(isNewPeriod && { credits: PLANS.STARTER.credits }),
+      credits: isNewPeriod ? PLANS.STARTER.credits : user.credits + PLANS.STARTER.credits,
     },
   });
 };
@@ -138,8 +139,13 @@ export const handleWebhook = asyncHandler(async (req, res, next) => {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(req.body, signature, envConfig.STRIPE_WEBHOOK_SECRET);
-  } catch {
+    event = await stripe.webhooks.constructEventAsync(
+      req.body,
+      signature,
+      envConfig.STRIPE_WEBHOOK_SECRET,
+    );
+  } catch (error) {
+    logger.error('Stripe webhook signature verification failed', error);
     return next(CustomErrorHandler.badRequest('Invalid stripe signature'));
   }
 
