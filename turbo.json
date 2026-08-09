@@ -22,10 +22,7 @@
     "STRIPE_SECRET_KEY",
     "STRIPE_WEBHOOK_SECRET",
     "STRIPE_STARTER_PRICE_ID",
-    "SMTP_HOST",
-    "SMTP_PORT",
-    "SMTP_USER",
-    "SMTP_PASSWORD",
+    "RESEND_API_KEY",
     "EMAIL_FROM"
   ],
   "tasks": {

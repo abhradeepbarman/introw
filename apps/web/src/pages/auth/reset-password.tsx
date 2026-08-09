@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { applyApiError } from '@/lib/form-errors';
+import { ApiError } from '@/services/api-client';
 import { resetPassword } from '@/services/auth.service';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { resetPasswordSchema, type ResetPasswordInput } from '@repo/common/validations';
@@ -22,6 +23,7 @@ const ResetPasswordPage = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const [done, setDone] = useState(false);
+  const [deadLink, setDeadLink] = useState<string | null>(null);
 
   const form = useForm<ResetPasswordInput>({
     resolver: zodResolver(resetPasswordSchema),
@@ -35,18 +37,24 @@ const ResetPasswordPage = () => {
     try {
       await resetPassword(token, values);
       setDone(true);
-      setTimeout(() => navigate('/login', { replace: true }), 1500);
+      navigate('/login', { replace: true });
     } catch (error) {
+      if (error instanceof ApiError && error.status === 400) {
+        setDeadLink(error.message);
+        return;
+      }
       applyApiError(error, form.setError, ['password']);
     }
   };
 
-  if (!token) {
+  const linkProblem = token ? deadLink : 'This link is incomplete';
+
+  if (linkProblem) {
     return (
       <AuthShell
         eyebrow="Reset password"
-        title="This link is incomplete."
-        subtitle="Request a fresh reset link and try again."
+        title="This link won't work."
+        subtitle={`${linkProblem}. Request a fresh link and try again.`}
         footer={
           <Link to="/forgot-password" className="font-medium text-brand hover:underline">
             Request a new link

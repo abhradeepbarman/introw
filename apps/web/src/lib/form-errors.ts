@@ -1,10 +1,6 @@
 import { ApiError } from '@/services/api-client';
 import type { FieldValues, Path, UseFormSetError } from 'react-hook-form';
 
-/**
- * Routes a failed request into the form: validation issues land on the field
- * they belong to, everything else becomes a form-level message.
- */
 export function applyApiError<T extends FieldValues>(
   error: unknown,
   setError: UseFormSetError<T>,
@@ -18,7 +14,12 @@ export function applyApiError<T extends FieldValues>(
   const matched = error.fieldErrors.filter((issue) => fields.includes(issue.field as Path<T>));
 
   if (matched.length === 0) {
-    setError('root', { message: error.message });
+    setError('root', {
+      message:
+        error.status >= 500
+          ? 'Something went wrong on our end. Try again in a moment.'
+          : error.message,
+    });
     return;
   }
 

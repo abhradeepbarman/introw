@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import envConfig from '../config/env';
 import { logger } from '../utils/logger';
 
@@ -8,28 +8,32 @@ type SendEmailInput = {
   body: string;
 };
 
-let transporter: nodemailer.Transporter | null = null;
+let resend: Resend | null = null;
 
-const getTransporter = () => {
-  if (!envConfig.SMTP_HOST) return null;
+const getResend = () => {
+  if (!envConfig.RESEND_API_KEY) return null;
 
-  transporter ??= nodemailer.createTransport({
-    host: envConfig.SMTP_HOST,
-    port: envConfig.SMTP_PORT,
-    secure: envConfig.SMTP_PORT === 465,
-    auth: { user: envConfig.SMTP_USER, pass: envConfig.SMTP_PASSWORD },
-  });
+  resend ??= new Resend(envConfig.RESEND_API_KEY);
 
-  return transporter;
+  return resend;
 };
 
 export const sendEmail = async ({ to, subject, body }: SendEmailInput) => {
-  const mailer = getTransporter();
+  const client = getResend();
 
-  if (!mailer) {
-    logger.warn(`SMTP is not configured — skipped email "${subject}" to ${to}`);
+  if (!client) {
+    logger.warn(`Resend is not configured — skipped email "${subject}" to ${to}`);
     return;
   }
 
-  await mailer.sendMail({ from: envConfig.EMAIL_FROM, to, subject, html: body });
+  const { error } = await client.emails.send({
+    from: envConfig.EMAIL_FROM,
+    to,
+    subject,
+    html: body,
+  });
+
+  if (error) {
+    throw new Error(`Failed to send email "${subject}" to ${to}: ${error.message}`);
+  }
 };
