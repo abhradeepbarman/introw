@@ -18,7 +18,7 @@ import {
   PASSWORD_TOKEN_TTL,
   REFRESH_TOKEN_COOKIE,
 } from '../constants';
-import { prisma } from '../lib/prisma';
+import { prisma } from '@repo/db';
 import { getGoogleProfile, getGoogleTokens, sendEmail } from '../services';
 import { forgotPasswordEmailTemplate } from '../templates';
 import asyncHandler from '../utils/async-handler';

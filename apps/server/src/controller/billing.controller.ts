@@ -1,7 +1,7 @@
 import type Stripe from 'stripe';
 import envConfig from '../config/env';
 import { PLANS } from '../constants';
-import { prisma } from '../lib/prisma';
+import { prisma } from '@repo/db';
 import { stripe } from '../lib/stripe';
 import asyncHandler from '../utils/async-handler';
 import CustomErrorHandler from '../utils/custom-error-handler';
@@ -31,8 +31,7 @@ export const getSubscription = asyncHandler(async (req, res, next) => {
       freeCredits: user.freeCredits,
       paidCredits: user.paidCredits,
       // Duration follows the credit that will actually be spent, not the plan.
-      nextInterviewMinutes:
-        PLANS[user.paidCredits > 0 ? 'STARTER' : 'FREE'].maxInterviewMinutes,
+      nextInterviewMinutes: PLANS[user.paidCredits > 0 ? 'STARTER' : 'FREE'].maxInterviewMinutes,
       renewsAt: user.planExpiresAt,
     }),
   );

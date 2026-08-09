@@ -6,7 +6,7 @@ import {
 import axios from 'axios';
 import envConfig from '../config/env';
 import { PLANS } from '../constants';
-import { prisma } from '../lib/prisma';
+import { prisma } from '@repo/db';
 import { initSideband } from '../lib/sideband';
 import { buildReportPdf } from '../templates';
 import asyncHandler from '../utils/async-handler';
@@ -202,7 +202,9 @@ export const createSession = asyncHandler(async (req, res, next) => {
       ? [
           prisma.user.update({
             where: { id: userId },
-            data: usePaidCredit ? { paidCredits: { decrement: 1 } } : { freeCredits: { decrement: 1 } },
+            data: usePaidCredit
+              ? { paidCredits: { decrement: 1 } }
+              : { freeCredits: { decrement: 1 } },
           }),
         ]
       : []),

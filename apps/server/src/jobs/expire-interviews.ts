@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { prisma } from '../lib/prisma';
+import { prisma } from '@repo/db';
 import { hangupCall, sendWrapUpInstruction } from '../lib/sideband';
 import { logger } from '../utils/logger';
 

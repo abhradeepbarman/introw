@@ -1,8 +1,8 @@
 import WebSocket from 'ws';
-import type { Interview } from '../../generated/prisma/client';
-import { UserType } from '../../generated/prisma/enums';
+import type { Interview } from '@repo/db';
+import { UserType } from '@repo/db';
 import envConfig from '../config/env';
-import { prisma } from '../lib/prisma';
+import { prisma } from '@repo/db';
 
 type GithubRepo = {
   name: string;

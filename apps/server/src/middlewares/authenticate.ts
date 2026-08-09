@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 import jwt, { type JwtPayload } from 'jsonwebtoken';
 import envConfig from '../config/env';
 import { ACCESS_TOKEN_COOKIE } from '../constants';
-import { prisma } from '../lib/prisma';
+import { prisma } from '@repo/db';
 import asyncHandler from '../utils/async-handler';
 import CustomErrorHandler from '../utils/custom-error-handler';
 
