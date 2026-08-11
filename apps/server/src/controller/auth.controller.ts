@@ -24,15 +24,11 @@ import { forgotPasswordEmailTemplate } from '../templates';
 import asyncHandler from '../utils/async-handler';
 import CustomErrorHandler from '../utils/custom-error-handler';
 import ResponseHandler from '../utils/response-handler';
-import {
-  clearAuthCookies,
-  cookieOptions,
-  generateTokens,
-  hashToken,
-  setCookies,
-} from '../utils/tokens';
+import { clearAuthCookies, cookieOptions, generateTokens, setCookies } from '../utils/tokens';
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
+
+const digest = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
 
 type SessionUser = {
   id: string;
@@ -49,7 +45,7 @@ const issueSession = async (res: Response, userId: string) => {
 
   await prisma.user.update({
     where: { id: userId },
-    data: { refreshToken: hashToken(refreshToken) },
+    data: { refreshToken: await bcrypt.hash(digest(refreshToken), BCRYPT_ROUNDS) },
   });
 
   return accessToken;
@@ -147,7 +143,10 @@ export const refreshAccessToken = asyncHandler(
 
     const userDetails = await prisma.user.findUnique({ where: { id: decoded.id } });
 
-    if (!userDetails?.refreshToken || userDetails.refreshToken !== hashToken(token)) {
+    if (
+      !userDetails?.refreshToken ||
+      !(await bcrypt.compare(digest(token), userDetails.refreshToken))
+    ) {
       return next(CustomErrorHandler.unAuthorized());
     }
 
@@ -178,14 +177,20 @@ export const sendForgotPasswordEmail = asyncHandler(async (req: Request, res: Re
   }
 
   const rawToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
 
-  await prisma.passwordToken.create({
-    data: {
-      userId: existingUser.id,
-      token: hashToken(rawToken),
-      expiresAt: new Date(Date.now() + PASSWORD_TOKEN_TTL),
-    },
-  });
+  await prisma.$transaction([
+    prisma.passwordToken.deleteMany({
+      where: { userId: existingUser.id, usedAt: null },
+    }),
+    prisma.passwordToken.create({
+      data: {
+        userId: existingUser.id,
+        token: tokenHash,
+        expiresAt: new Date(Date.now() + PASSWORD_TOKEN_TTL),
+      },
+    }),
+  ]);
 
   const link = `${envConfig.APP_URL}/reset-password/${rawToken}`;
   const html = forgotPasswordEmailTemplate(existingUser.name, link);
@@ -203,18 +208,12 @@ export const resetPassword = asyncHandler(
       return next(CustomErrorHandler.badRequest('Token is invalid'));
     }
 
-    const existingToken = await prisma.passwordToken.findUnique({
-      where: { token: hashToken(token) },
+    const existingToken = await prisma.passwordToken.findFirst({
+      where: { token: digest(token), usedAt: null, expiresAt: { gt: new Date() } },
     });
 
     if (!existingToken) {
-      return next(CustomErrorHandler.badRequest('Token is invalid'));
-    }
-    if (existingToken.usedAt) {
-      return next(CustomErrorHandler.badRequest('Token has already been used'));
-    }
-    if (Date.now() > existingToken.expiresAt.getTime()) {
-      return next(CustomErrorHandler.badRequest('Token is expired'));
+      return next(CustomErrorHandler.badRequest('Token is invalid or expired'));
     }
 
     const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
@@ -224,8 +223,8 @@ export const resetPassword = asyncHandler(
         where: { id: existingToken.userId },
         data: { password: hashedPassword, refreshToken: null },
       }),
-      prisma.passwordToken.update({
-        where: { id: existingToken.id },
+      prisma.passwordToken.updateMany({
+        where: { userId: existingToken.userId, usedAt: null },
         data: { usedAt: new Date() },
       }),
     ]);

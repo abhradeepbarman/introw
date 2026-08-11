@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import type { Response } from 'express';
 import envConfig from '../config/env';
@@ -44,9 +43,3 @@ export const clearAuthCookies = (res: Response) => {
   res.clearCookie(ACCESS_TOKEN_COOKIE, accessOptions);
   res.clearCookie(REFRESH_TOKEN_COOKIE, refreshOptions);
 };
-
-/**
- * Refresh and password-reset tokens are stored as digests so a database leak
- * cannot be replayed against the API.
- */
-export const hashToken = (token: string) => crypto.createHash('sha256').update(token).digest('hex');

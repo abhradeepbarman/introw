@@ -6,7 +6,7 @@ import {
   handleWebhook,
   listPlans,
 } from '../controller/billing.controller';
-import auth from '../middlewares/authenticate';
+import auth from '../middlewares/auth';
 
 const router = Router();
 

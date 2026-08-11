@@ -7,7 +7,7 @@ import {
   getInterviewResult,
   listInterviews,
 } from '../controller/interview.controller';
-import auth from '../middlewares/authenticate';
+import auth from '../middlewares/auth';
 
 const router = Router();
 

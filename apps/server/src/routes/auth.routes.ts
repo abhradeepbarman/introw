@@ -10,7 +10,7 @@ import {
   userLogout,
   userRegister,
 } from '../controller/auth.controller';
-import auth from '../middlewares/authenticate';
+import auth from '../middlewares/auth';
 
 const router = Router();
 
