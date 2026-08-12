@@ -15,6 +15,7 @@ import CustomErrorHandler from '../utils/custom-error-handler';
 import { evaluateInterview } from '../utils/evaluate-interview';
 import { parseResume } from '../utils/parse-resume';
 import ResponseHandler from '../utils/response-handler';
+import { sessionConfig } from '../config/session';
 
 type GithubRepo = {
   name: string;
@@ -96,8 +97,6 @@ export const createInterview = asyncHandler(async (req, res, next) => {
     return next(CustomErrorHandler.badRequest('Add a GitHub profile, a résumé, or both'));
   }
 
-  // Either source alone is enough, but a source the candidate did supply has to work —
-  // failing loudly beats interviewing them on half of what they handed us.
   const githubMetadata = githubUrl ? await fetchGithubMetadata(githubUrl) : [];
 
   const [resumeUrl, resumeData] = req.file
@@ -119,27 +118,6 @@ export const createInterview = asyncHandler(async (req, res, next) => {
     }),
   );
 });
-
-const sessionConfig = {
-  type: 'realtime',
-  model: 'gpt-realtime-2.1',
-  instructions: `You are an AI interviewer conducting a technical interview.`,
-  audio: {
-    input: {
-      turn_detection: {
-        type: 'server_vad',
-      },
-      transcription: {
-        model: 'gpt-4o-mini-transcribe',
-        language: 'en',
-        prompt: 'Technical software engineering interview.',
-      },
-    },
-    output: {
-      voice: 'marin',
-    },
-  },
-};
 
 export const createSession = asyncHandler(async (req, res, next) => {
   const { id: interviewId } = req.params as { id: string };
