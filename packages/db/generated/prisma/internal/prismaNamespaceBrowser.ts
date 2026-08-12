@@ -80,15 +80,14 @@ export const UserScalarFieldEnum = {
   email: 'email',
   password: 'password',
   authProvider: 'authProvider',
-  freeCredits: 'freeCredits',
-  paidCredits: 'paidCredits',
   refreshToken: 'refreshToken',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
+  credits: 'credits',
   plan: 'plan',
   stripeCustomerId: 'stripeCustomerId',
   stripeSubscriptionId: 'stripeSubscriptionId',
-  planExpiresAt: 'planExpiresAt'
+  planExpiresAt: 'planExpiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]

@@ -4,7 +4,8 @@ export const emailSchema = z
   .string()
   .trim()
   .min(1, 'Enter your email address.')
-  .email('Enter a valid email address.');
+  .email('Enter a valid email address.')
+  .toLowerCase();
 
 export const passwordSchema = z
   .string()

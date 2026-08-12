@@ -24,7 +24,8 @@
     "STRIPE_STARTER_PRICE_ID",
     "IMAGEKIT_PRIVATE_KEY",
     "RESEND_API_KEY",
-    "EMAIL_FROM"
+    "EMAIL_FROM",
+    "GITHUB_TOKEN"
   ],
   "tasks": {
     "build": {

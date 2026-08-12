@@ -3,12 +3,12 @@ import {
   paginationQuerySchema,
   rubricSchema,
 } from '@repo/common/validations';
-import axios from 'axios';
 import envConfig from '../config/env';
-import { PLANS } from '../constants';
+import { CREDIT_MINUTES } from '../constants';
 import { prisma } from '@repo/db';
 import { uploadResume } from '../lib/imagekit';
 import { initSideband } from '../lib/sideband';
+import { fetchGithubMetadata } from '../services';
 import { buildReportPdf } from '../templates';
 import asyncHandler from '../utils/async-handler';
 import CustomErrorHandler from '../utils/custom-error-handler';
@@ -16,79 +16,6 @@ import { evaluateInterview } from '../utils/evaluate-interview';
 import { parseResume } from '../utils/parse-resume';
 import ResponseHandler from '../utils/response-handler';
 import { sessionConfig } from '../config/session';
-
-type GithubRepo = {
-  name: string;
-  description: string | null;
-  language: string | null;
-  fork?: boolean;
-  archived?: boolean;
-};
-
-const ownedBy = (interviewId: string, userId: string) => ({
-  id: interviewId,
-  OR: [{ userId }, { userId: null }],
-});
-
-const fetchGithubMetadata = async (githubUrl: string) => {
-  const githubUsername = githubUrl.replace(/\/+$/, '').split('/').pop();
-
-  if (!githubUsername) {
-    throw CustomErrorHandler.badRequest('Invalid GitHub URL');
-  }
-
-  const githubApiUrl = `https://api.github.com/users/${encodeURIComponent(githubUsername)}/repos`;
-
-  let response;
-  try {
-    response = await axios.get<GithubRepo[]>(githubApiUrl, {
-      params: {
-        per_page: 100,
-        sort: 'pushed',
-        direction: 'desc',
-        type: 'owner',
-      },
-      headers: {
-        Accept: 'application/vnd.github+json',
-      },
-      timeout: 15000,
-      proxy: {
-        protocol: 'http',
-        host: envConfig.CRAWLBASE_PROXY_HOST,
-        port: envConfig.CRAWLBASE_PROXY_PORT,
-        auth: {
-          username: envConfig.CRAWLBASE_PROXY_KEY,
-          password: '',
-        },
-      },
-    });
-  } catch (err: any) {
-    if (err.response?.status === 404) {
-      throw CustomErrorHandler.notFound('GitHub user not found');
-    }
-    if (err.response?.status === 403 || err.response?.status === 429) {
-      throw new CustomErrorHandler(429, 'GitHub rate limit exceeded, try again shortly');
-    }
-    throw err;
-  }
-
-  const raw = Array.isArray(response.data) ? response.data : [];
-
-  const githubMetadata = raw
-    .filter((r) => !r.fork && !r.archived && (r.description || r.language))
-    .slice(0, 8)
-    .map((r) => ({
-      name: r.name,
-      language: r.language,
-      description: r.description?.slice(0, 120) ?? null,
-    }));
-
-  if (githubMetadata.length === 0) {
-    throw new CustomErrorHandler(422, 'No suitable public repositories found for this user');
-  }
-
-  return githubMetadata;
-};
 
 export const createInterview = asyncHandler(async (req, res, next) => {
   const { githubUrl } = interviewSourcesSchema.parse(req.body);
@@ -119,12 +46,12 @@ export const createInterview = asyncHandler(async (req, res, next) => {
   );
 });
 
-export const createSession = asyncHandler(async (req, res, next) => {
+export const startSession = asyncHandler(async (req, res, next) => {
   const { id: interviewId } = req.params as { id: string };
   const { id: userId } = req.user;
 
   const interview = await prisma.interview.findFirst({
-    where: ownedBy(interviewId, userId),
+    where: { id: interviewId, OR: [{ userId }, { userId: null }] },
   });
 
   if (!interview) {
@@ -137,23 +64,16 @@ export const createSession = asyncHandler(async (req, res, next) => {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { freeCredits: true, paidCredits: true },
+    select: { credits: true },
   });
 
   const isFirstStart = interview.startedAt === null;
 
-  // Paid credits are spent first, and the bucket the credit came from sets the duration —
-  // so a leftover free credit stays a 2-minute interview even on the Starter plan, and a
-  // paid credit stays a 5-minute one even after the subscription lapses.
-  const usePaidCredit = (user?.paidCredits ?? 0) > 0;
-
-  if (isFirstStart && !usePaidCredit && (user?.freeCredits ?? 0) <= 0) {
+  if (isFirstStart && (user?.credits ?? 0) <= 0) {
     return next(CustomErrorHandler.badRequest('You have no interview credits left'));
   }
 
-  const maxTime = isFirstStart
-    ? PLANS[usePaidCredit ? 'STARTER' : 'FREE'].maxInterviewMinutes * 60
-    : interview.maxTime;
+  const maxTime = isFirstStart ? CREDIT_MINUTES * 60 : interview.maxTime;
 
   const elapsed = isFirstStart
     ? 0
@@ -194,14 +114,7 @@ export const createSession = asyncHandler(async (req, res, next) => {
       },
     }),
     ...(isFirstStart
-      ? [
-          prisma.user.update({
-            where: { id: userId },
-            data: usePaidCredit
-              ? { paidCredits: { decrement: 1 } }
-              : { freeCredits: { decrement: 1 } },
-          }),
-        ]
+      ? [prisma.user.update({ where: { id: userId }, data: { credits: { decrement: 1 } } })]
       : []),
   ]);
 
@@ -257,7 +170,7 @@ export const downloadReport = asyncHandler(async (req, res, next) => {
   const { id: interviewId } = req.params as { id: string };
 
   const interview = await prisma.interview.findFirst({
-    where: ownedBy(interviewId, req.user.id),
+    where: { id: interviewId, OR: [{ userId: req.user.id }, { userId: null }] },
     include: { result: true },
   });
 
@@ -292,7 +205,7 @@ export const downloadTranscript = asyncHandler(async (req, res, next) => {
   const { id: interviewId } = req.params as { id: string };
 
   const interview = await prisma.interview.findFirst({
-    where: ownedBy(interviewId, req.user.id),
+    where: { id: interviewId, OR: [{ userId: req.user.id }, { userId: null }] },
     include: { conversations: { orderBy: { createdAt: 'asc' } } },
   });
 
@@ -329,7 +242,7 @@ export const getInterviewResult = asyncHandler(async (req, res, next) => {
   const { id: interviewId } = req.params as { id: string };
 
   const interview = await prisma.interview.findFirst({
-    where: ownedBy(interviewId, req.user.id),
+    where: { id: interviewId, OR: [{ userId: req.user.id }, { userId: null }] },
     include: { conversations: { orderBy: { createdAt: 'asc' } }, result: true },
   });
 

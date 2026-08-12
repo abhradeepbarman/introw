@@ -30,8 +30,7 @@ const auth = asyncHandler(async (req: Request, _res: Response, next: NextFunctio
       name: true,
       email: true,
       authProvider: true,
-      freeCredits: true,
-      paidCredits: true,
+      credits: true,
     },
   });
 
@@ -39,8 +38,7 @@ const auth = asyncHandler(async (req: Request, _res: Response, next: NextFunctio
     return next(CustomErrorHandler.unAuthorized());
   }
 
-  const { freeCredits, paidCredits, ...rest } = user;
-  req.user = { ...rest, credits: freeCredits + paidCredits };
+  req.user = user;
   return next();
 });
 

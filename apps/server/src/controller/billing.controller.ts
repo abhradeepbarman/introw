@@ -1,6 +1,6 @@
 import type Stripe from 'stripe';
 import envConfig from '../config/env';
-import { PLANS } from '../constants';
+import { CREDIT_MINUTES, FREE_PLAN } from '../constants';
 import { prisma } from '@repo/db';
 import { stripe } from '../lib/stripe';
 import asyncHandler from '../utils/async-handler';
@@ -8,16 +8,39 @@ import CustomErrorHandler from '../utils/custom-error-handler';
 import { logger } from '../utils/logger';
 import ResponseHandler from '../utils/response-handler';
 
-export const listPlans = asyncHandler(async (_req, res) => {
+export const listPlans = asyncHandler(async (_req, res, next) => {
+  if (!envConfig.STRIPE_STARTER_PRICE_ID) {
+    return next(CustomErrorHandler.serverError('Billing is not configured'));
+  }
+
+  const price = await stripe.prices.retrieve(envConfig.STRIPE_STARTER_PRICE_ID, {
+    expand: ['product'],
+  });
+  const product = price.product as Stripe.Product;
+
+  const starter = {
+    id: product.metadata.plan_id,
+    name: product.name,
+    price: (price.unit_amount ?? 0) / 100,
+    currency: price.currency.toUpperCase(),
+
+    credits: Number(product.metadata.credits ?? 0),
+    billingInterval: price.recurring?.interval ?? null,
+
+    resumeUpload: product.metadata.resume_upload === 'true',
+
+    features: product.marketing_features.flatMap((f) => f.name ?? []),
+  };
+
   return res
     .status(200)
-    .send(ResponseHandler(200, 'Plans fetched successfully', { plans: Object.values(PLANS) }));
+    .send(ResponseHandler(200, 'Plans fetched successfully', { plans: [FREE_PLAN, starter] }));
 });
 
 export const getSubscription = asyncHandler(async (req, res, next) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user.id },
-    select: { plan: true, freeCredits: true, paidCredits: true, planExpiresAt: true },
+    select: { plan: true, credits: true, planExpiresAt: true },
   });
 
   if (!user) {
@@ -26,12 +49,9 @@ export const getSubscription = asyncHandler(async (req, res, next) => {
 
   return res.status(200).send(
     ResponseHandler(200, 'Subscription fetched successfully', {
-      plan: PLANS[user.plan],
-      credits: user.freeCredits + user.paidCredits,
-      freeCredits: user.freeCredits,
-      paidCredits: user.paidCredits,
-      // Duration follows the credit that will actually be spent, not the plan.
-      nextInterviewMinutes: PLANS[user.paidCredits > 0 ? 'STARTER' : 'FREE'].maxInterviewMinutes,
+      plan: user.plan,
+      credits: user.credits,
+      creditMinutes: CREDIT_MINUTES,
       renewsAt: user.planExpiresAt,
     }),
   );
@@ -112,7 +132,6 @@ const syncSubscription = async (subscription: Stripe.Subscription) => {
   const isActive = subscription.status === 'active' || subscription.status === 'trialing';
 
   if (!isActive) {
-    // Paid credits are kept — they were bought, and they stay 5-minute interviews.
     await prisma.user.update({
       where: { id: user.id },
       data: { plan: 'FREE', stripeSubscriptionId: null, planExpiresAt: null },
@@ -120,12 +139,12 @@ const syncSubscription = async (subscription: Stripe.Subscription) => {
     return;
   }
 
-  const periodEnd = subscription.items.data[0]?.current_period_end;
-  const expiresAt = periodEnd ? new Date(periodEnd * 1000) : null;
-
-  // Only a fresh billing period grants credits. Stripe fires `subscription.updated` for
-  // unrelated reasons (card changes, metadata edits) and those must not top anyone up.
+  const item = subscription.items.data[0];
+  const expiresAt = item?.current_period_end ? new Date(item.current_period_end * 1000) : null;
   const isNewPeriod = user.planExpiresAt?.getTime() !== expiresAt?.getTime();
+
+  const product =
+    isNewPeriod && item ? await stripe.products.retrieve(item.price.product as string) : null;
 
   await prisma.user.update({
     where: { id: user.id },
@@ -133,7 +152,7 @@ const syncSubscription = async (subscription: Stripe.Subscription) => {
       plan: 'STARTER',
       stripeSubscriptionId: subscription.id,
       planExpiresAt: expiresAt,
-      ...(isNewPeriod && { paidCredits: PLANS.STARTER.credits }),
+      ...(product && { credits: Number(product.metadata.credits ?? 0) }),
     },
   });
 };

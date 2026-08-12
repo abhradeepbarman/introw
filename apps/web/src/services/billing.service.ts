@@ -8,16 +8,15 @@ export type Plan = {
   price: number;
   currency: string;
   credits: number;
-  maxInterviewMinutes: number;
+  billingInterval: string | null;
+  resumeUpload: boolean;
   features: string[];
 };
 
 export type Subscription = {
-  plan: Plan;
+  plan: PlanId;
   credits: number;
-  freeCredits: number;
-  paidCredits: number;
-  nextInterviewMinutes: number;
+  creditMinutes: number;
   renewsAt: string | null;
 };
 

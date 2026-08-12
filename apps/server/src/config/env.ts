@@ -30,6 +30,8 @@ const _envConfig = {
 
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
   EMAIL_FROM: process.env.EMAIL_FROM || 'Intervue <no-reply@intervue.app>',
+
+  GITHUB_TOKEN: process.env.GITHUB_TOKEN || '',
 };
 
 const envConfig = Object.freeze(_envConfig);

@@ -27,13 +27,11 @@ export type AggregateUser = {
 }
 
 export type UserAvgAggregateOutputType = {
-  freeCredits: number | null
-  paidCredits: number | null
+  credits: number | null
 }
 
 export type UserSumAggregateOutputType = {
-  freeCredits: number | null
-  paidCredits: number | null
+  credits: number | null
 }
 
 export type UserMinAggregateOutputType = {
@@ -42,15 +40,14 @@ export type UserMinAggregateOutputType = {
   email: string | null
   password: string | null
   authProvider: $Enums.AuthProvider | null
-  freeCredits: number | null
-  paidCredits: number | null
   refreshToken: string | null
-  createdAt: Date | null
-  updatedAt: Date | null
+  credits: number | null
   plan: $Enums.Plan | null
   stripeCustomerId: string | null
   stripeSubscriptionId: string | null
   planExpiresAt: Date | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type UserMaxAggregateOutputType = {
@@ -59,15 +56,14 @@ export type UserMaxAggregateOutputType = {
   email: string | null
   password: string | null
   authProvider: $Enums.AuthProvider | null
-  freeCredits: number | null
-  paidCredits: number | null
   refreshToken: string | null
-  createdAt: Date | null
-  updatedAt: Date | null
+  credits: number | null
   plan: $Enums.Plan | null
   stripeCustomerId: string | null
   stripeSubscriptionId: string | null
   planExpiresAt: Date | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type UserCountAggregateOutputType = {
@@ -76,27 +72,24 @@ export type UserCountAggregateOutputType = {
   email: number
   password: number
   authProvider: number
-  freeCredits: number
-  paidCredits: number
   refreshToken: number
-  createdAt: number
-  updatedAt: number
+  credits: number
   plan: number
   stripeCustomerId: number
   stripeSubscriptionId: number
   planExpiresAt: number
+  createdAt: number
+  updatedAt: number
   _all: number
 }
 
 
 export type UserAvgAggregateInputType = {
-  freeCredits?: true
-  paidCredits?: true
+  credits?: true
 }
 
 export type UserSumAggregateInputType = {
-  freeCredits?: true
-  paidCredits?: true
+  credits?: true
 }
 
 export type UserMinAggregateInputType = {
@@ -105,15 +98,14 @@ export type UserMinAggregateInputType = {
   email?: true
   password?: true
   authProvider?: true
-  freeCredits?: true
-  paidCredits?: true
   refreshToken?: true
-  createdAt?: true
-  updatedAt?: true
+  credits?: true
   plan?: true
   stripeCustomerId?: true
   stripeSubscriptionId?: true
   planExpiresAt?: true
+  createdAt?: true
+  updatedAt?: true
 }
 
 export type UserMaxAggregateInputType = {
@@ -122,15 +114,14 @@ export type UserMaxAggregateInputType = {
   email?: true
   password?: true
   authProvider?: true
-  freeCredits?: true
-  paidCredits?: true
   refreshToken?: true
-  createdAt?: true
-  updatedAt?: true
+  credits?: true
   plan?: true
   stripeCustomerId?: true
   stripeSubscriptionId?: true
   planExpiresAt?: true
+  createdAt?: true
+  updatedAt?: true
 }
 
 export type UserCountAggregateInputType = {
@@ -139,15 +130,14 @@ export type UserCountAggregateInputType = {
   email?: true
   password?: true
   authProvider?: true
-  freeCredits?: true
-  paidCredits?: true
   refreshToken?: true
-  createdAt?: true
-  updatedAt?: true
+  credits?: true
   plan?: true
   stripeCustomerId?: true
   stripeSubscriptionId?: true
   planExpiresAt?: true
+  createdAt?: true
+  updatedAt?: true
   _all?: true
 }
 
@@ -243,15 +233,14 @@ export type UserGroupByOutputType = {
   email: string
   password: string | null
   authProvider: $Enums.AuthProvider
-  freeCredits: number
-  paidCredits: number
   refreshToken: string | null
-  createdAt: Date
-  updatedAt: Date
+  credits: number
   plan: $Enums.Plan
   stripeCustomerId: string | null
   stripeSubscriptionId: string | null
   planExpiresAt: Date | null
+  createdAt: Date
+  updatedAt: Date
   _count: UserCountAggregateOutputType | null
   _avg: UserAvgAggregateOutputType | null
   _sum: UserSumAggregateOutputType | null
@@ -283,15 +272,14 @@ export type UserWhereInput = {
   email?: Prisma.StringFilter<"User"> | string
   password?: Prisma.StringNullableFilter<"User"> | string | null
   authProvider?: Prisma.EnumAuthProviderFilter<"User"> | $Enums.AuthProvider
-  freeCredits?: Prisma.IntFilter<"User"> | number
-  paidCredits?: Prisma.IntFilter<"User"> | number
   refreshToken?: Prisma.StringNullableFilter<"User"> | string | null
-  createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
-  updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  credits?: Prisma.IntFilter<"User"> | number
   plan?: Prisma.EnumPlanFilter<"User"> | $Enums.Plan
   stripeCustomerId?: Prisma.StringNullableFilter<"User"> | string | null
   stripeSubscriptionId?: Prisma.StringNullableFilter<"User"> | string | null
   planExpiresAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
+  createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   interviews?: Prisma.InterviewListRelationFilter
   passwordTokens?: Prisma.PasswordTokenListRelationFilter
 }
@@ -302,15 +290,14 @@ export type UserOrderByWithRelationInput = {
   email?: Prisma.SortOrder
   password?: Prisma.SortOrderInput | Prisma.SortOrder
   authProvider?: Prisma.SortOrder
-  freeCredits?: Prisma.SortOrder
-  paidCredits?: Prisma.SortOrder
   refreshToken?: Prisma.SortOrderInput | Prisma.SortOrder
-  createdAt?: Prisma.SortOrder
-  updatedAt?: Prisma.SortOrder
+  credits?: Prisma.SortOrder
   plan?: Prisma.SortOrder
   stripeCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
   stripeSubscriptionId?: Prisma.SortOrderInput | Prisma.SortOrder
   planExpiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   interviews?: Prisma.InterviewOrderByRelationAggregateInput
   passwordTokens?: Prisma.PasswordTokenOrderByRelationAggregateInput
 }
@@ -326,13 +313,12 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"User"> | string
   password?: Prisma.StringNullableFilter<"User"> | string | null
   authProvider?: Prisma.EnumAuthProviderFilter<"User"> | $Enums.AuthProvider
-  freeCredits?: Prisma.IntFilter<"User"> | number
-  paidCredits?: Prisma.IntFilter<"User"> | number
   refreshToken?: Prisma.StringNullableFilter<"User"> | string | null
-  createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
-  updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  credits?: Prisma.IntFilter<"User"> | number
   plan?: Prisma.EnumPlanFilter<"User"> | $Enums.Plan
   planExpiresAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
+  createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   interviews?: Prisma.InterviewListRelationFilter
   passwordTokens?: Prisma.PasswordTokenListRelationFilter
 }, "id" | "email" | "stripeCustomerId" | "stripeSubscriptionId">
@@ -343,15 +329,14 @@ export type UserOrderByWithAggregationInput = {
   email?: Prisma.SortOrder
   password?: Prisma.SortOrderInput | Prisma.SortOrder
   authProvider?: Prisma.SortOrder
-  freeCredits?: Prisma.SortOrder
-  paidCredits?: Prisma.SortOrder
   refreshToken?: Prisma.SortOrderInput | Prisma.SortOrder
-  createdAt?: Prisma.SortOrder
-  updatedAt?: Prisma.SortOrder
+  credits?: Prisma.SortOrder
   plan?: Prisma.SortOrder
   stripeCustomerId?: Prisma.SortOrderInput | Prisma.SortOrder
   stripeSubscriptionId?: Prisma.SortOrderInput | Prisma.SortOrder
   planExpiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
   _avg?: Prisma.UserAvgOrderByAggregateInput
   _max?: Prisma.UserMaxOrderByAggregateInput
@@ -368,15 +353,14 @@ export type UserScalarWhereWithAggregatesInput = {
   email?: Prisma.StringWithAggregatesFilter<"User"> | string
   password?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   authProvider?: Prisma.EnumAuthProviderWithAggregatesFilter<"User"> | $Enums.AuthProvider
-  freeCredits?: Prisma.IntWithAggregatesFilter<"User"> | number
-  paidCredits?: Prisma.IntWithAggregatesFilter<"User"> | number
   refreshToken?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
-  createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
-  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
+  credits?: Prisma.IntWithAggregatesFilter<"User"> | number
   plan?: Prisma.EnumPlanWithAggregatesFilter<"User"> | $Enums.Plan
   stripeCustomerId?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   stripeSubscriptionId?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   planExpiresAt?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
+  createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
 }
 
 export type UserCreateInput = {
@@ -385,15 +369,14 @@ export type UserCreateInput = {
   email: string
   password?: string | null
   authProvider?: $Enums.AuthProvider
-  freeCredits?: number
-  paidCredits?: number
   refreshToken?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
+  credits?: number
   plan?: $Enums.Plan
   stripeCustomerId?: string | null
   stripeSubscriptionId?: string | null
   planExpiresAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
   interviews?: Prisma.InterviewCreateNestedManyWithoutUserInput
   passwordTokens?: Prisma.PasswordTokenCreateNestedManyWithoutUserInput
 }
@@ -404,15 +387,14 @@ export type UserUncheckedCreateInput = {
   email: string
   password?: string | null
   authProvider?: $Enums.AuthProvider
-  freeCredits?: number
-  paidCredits?: number
   refreshToken?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
+  credits?: number
   plan?: $Enums.Plan
   stripeCustomerId?: string | null
   stripeSubscriptionId?: string | null
   planExpiresAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
   interviews?: Prisma.InterviewUncheckedCreateNestedManyWithoutUserInput
   passwordTokens?: Prisma.PasswordTokenUncheckedCreateNestedManyWithoutUserInput
 }
@@ -423,15 +405,14 @@ export type UserUpdateInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
-  freeCredits?: Prisma.IntFieldUpdateOperationsInput | number
-  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   refreshToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  credits?: Prisma.IntFieldUpdateOperationsInput | number
   plan?: Prisma.EnumPlanFieldUpdateOperationsInput | $Enums.Plan
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   interviews?: Prisma.InterviewUpdateManyWithoutUserNestedInput
   passwordTokens?: Prisma.PasswordTokenUpdateManyWithoutUserNestedInput
 }
@@ -442,15 +423,14 @@ export type UserUncheckedUpdateInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
-  freeCredits?: Prisma.IntFieldUpdateOperationsInput | number
-  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   refreshToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  credits?: Prisma.IntFieldUpdateOperationsInput | number
   plan?: Prisma.EnumPlanFieldUpdateOperationsInput | $Enums.Plan
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   interviews?: Prisma.InterviewUncheckedUpdateManyWithoutUserNestedInput
   passwordTokens?: Prisma.PasswordTokenUncheckedUpdateManyWithoutUserNestedInput
 }
@@ -461,15 +441,14 @@ export type UserCreateManyInput = {
   email: string
   password?: string | null
   authProvider?: $Enums.AuthProvider
-  freeCredits?: number
-  paidCredits?: number
   refreshToken?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
+  credits?: number
   plan?: $Enums.Plan
   stripeCustomerId?: string | null
   stripeSubscriptionId?: string | null
   planExpiresAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type UserUpdateManyMutationInput = {
@@ -478,15 +457,14 @@ export type UserUpdateManyMutationInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
-  freeCredits?: Prisma.IntFieldUpdateOperationsInput | number
-  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   refreshToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  credits?: Prisma.IntFieldUpdateOperationsInput | number
   plan?: Prisma.EnumPlanFieldUpdateOperationsInput | $Enums.Plan
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type UserUncheckedUpdateManyInput = {
@@ -495,15 +473,14 @@ export type UserUncheckedUpdateManyInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
-  freeCredits?: Prisma.IntFieldUpdateOperationsInput | number
-  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   refreshToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  credits?: Prisma.IntFieldUpdateOperationsInput | number
   plan?: Prisma.EnumPlanFieldUpdateOperationsInput | $Enums.Plan
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type UserCountOrderByAggregateInput = {
@@ -512,20 +489,18 @@ export type UserCountOrderByAggregateInput = {
   email?: Prisma.SortOrder
   password?: Prisma.SortOrder
   authProvider?: Prisma.SortOrder
-  freeCredits?: Prisma.SortOrder
-  paidCredits?: Prisma.SortOrder
   refreshToken?: Prisma.SortOrder
-  createdAt?: Prisma.SortOrder
-  updatedAt?: Prisma.SortOrder
+  credits?: Prisma.SortOrder
   plan?: Prisma.SortOrder
   stripeCustomerId?: Prisma.SortOrder
   stripeSubscriptionId?: Prisma.SortOrder
   planExpiresAt?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type UserAvgOrderByAggregateInput = {
-  freeCredits?: Prisma.SortOrder
-  paidCredits?: Prisma.SortOrder
+  credits?: Prisma.SortOrder
 }
 
 export type UserMaxOrderByAggregateInput = {
@@ -534,15 +509,14 @@ export type UserMaxOrderByAggregateInput = {
   email?: Prisma.SortOrder
   password?: Prisma.SortOrder
   authProvider?: Prisma.SortOrder
-  freeCredits?: Prisma.SortOrder
-  paidCredits?: Prisma.SortOrder
   refreshToken?: Prisma.SortOrder
-  createdAt?: Prisma.SortOrder
-  updatedAt?: Prisma.SortOrder
+  credits?: Prisma.SortOrder
   plan?: Prisma.SortOrder
   stripeCustomerId?: Prisma.SortOrder
   stripeSubscriptionId?: Prisma.SortOrder
   planExpiresAt?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type UserMinOrderByAggregateInput = {
@@ -551,20 +525,18 @@ export type UserMinOrderByAggregateInput = {
   email?: Prisma.SortOrder
   password?: Prisma.SortOrder
   authProvider?: Prisma.SortOrder
-  freeCredits?: Prisma.SortOrder
-  paidCredits?: Prisma.SortOrder
   refreshToken?: Prisma.SortOrder
-  createdAt?: Prisma.SortOrder
-  updatedAt?: Prisma.SortOrder
+  credits?: Prisma.SortOrder
   plan?: Prisma.SortOrder
   stripeCustomerId?: Prisma.SortOrder
   stripeSubscriptionId?: Prisma.SortOrder
   planExpiresAt?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type UserSumOrderByAggregateInput = {
-  freeCredits?: Prisma.SortOrder
-  paidCredits?: Prisma.SortOrder
+  credits?: Prisma.SortOrder
 }
 
 export type UserScalarRelationFilter = {
@@ -597,16 +569,16 @@ export type IntFieldUpdateOperationsInput = {
   divide?: number
 }
 
-export type DateTimeFieldUpdateOperationsInput = {
-  set?: Date | string
-}
-
 export type EnumPlanFieldUpdateOperationsInput = {
   set?: $Enums.Plan
 }
 
 export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
+}
+
+export type DateTimeFieldUpdateOperationsInput = {
+  set?: Date | string
 }
 
 export type UserCreateNestedOneWithoutPasswordTokensInput = {
@@ -645,15 +617,14 @@ export type UserCreateWithoutPasswordTokensInput = {
   email: string
   password?: string | null
   authProvider?: $Enums.AuthProvider
-  freeCredits?: number
-  paidCredits?: number
   refreshToken?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
+  credits?: number
   plan?: $Enums.Plan
   stripeCustomerId?: string | null
   stripeSubscriptionId?: string | null
   planExpiresAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
   interviews?: Prisma.InterviewCreateNestedManyWithoutUserInput
 }
 
@@ -663,15 +634,14 @@ export type UserUncheckedCreateWithoutPasswordTokensInput = {
   email: string
   password?: string | null
   authProvider?: $Enums.AuthProvider
-  freeCredits?: number
-  paidCredits?: number
   refreshToken?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
+  credits?: number
   plan?: $Enums.Plan
   stripeCustomerId?: string | null
   stripeSubscriptionId?: string | null
   planExpiresAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
   interviews?: Prisma.InterviewUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -697,15 +667,14 @@ export type UserUpdateWithoutPasswordTokensInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
-  freeCredits?: Prisma.IntFieldUpdateOperationsInput | number
-  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   refreshToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  credits?: Prisma.IntFieldUpdateOperationsInput | number
   plan?: Prisma.EnumPlanFieldUpdateOperationsInput | $Enums.Plan
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   interviews?: Prisma.InterviewUpdateManyWithoutUserNestedInput
 }
 
@@ -715,15 +684,14 @@ export type UserUncheckedUpdateWithoutPasswordTokensInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
-  freeCredits?: Prisma.IntFieldUpdateOperationsInput | number
-  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   refreshToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  credits?: Prisma.IntFieldUpdateOperationsInput | number
   plan?: Prisma.EnumPlanFieldUpdateOperationsInput | $Enums.Plan
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   interviews?: Prisma.InterviewUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -733,15 +701,14 @@ export type UserCreateWithoutInterviewsInput = {
   email: string
   password?: string | null
   authProvider?: $Enums.AuthProvider
-  freeCredits?: number
-  paidCredits?: number
   refreshToken?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
+  credits?: number
   plan?: $Enums.Plan
   stripeCustomerId?: string | null
   stripeSubscriptionId?: string | null
   planExpiresAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
   passwordTokens?: Prisma.PasswordTokenCreateNestedManyWithoutUserInput
 }
 
@@ -751,15 +718,14 @@ export type UserUncheckedCreateWithoutInterviewsInput = {
   email: string
   password?: string | null
   authProvider?: $Enums.AuthProvider
-  freeCredits?: number
-  paidCredits?: number
   refreshToken?: string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
+  credits?: number
   plan?: $Enums.Plan
   stripeCustomerId?: string | null
   stripeSubscriptionId?: string | null
   planExpiresAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
   passwordTokens?: Prisma.PasswordTokenUncheckedCreateNestedManyWithoutUserInput
 }
 
@@ -785,15 +751,14 @@ export type UserUpdateWithoutInterviewsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
-  freeCredits?: Prisma.IntFieldUpdateOperationsInput | number
-  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   refreshToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  credits?: Prisma.IntFieldUpdateOperationsInput | number
   plan?: Prisma.EnumPlanFieldUpdateOperationsInput | $Enums.Plan
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   passwordTokens?: Prisma.PasswordTokenUpdateManyWithoutUserNestedInput
 }
 
@@ -803,15 +768,14 @@ export type UserUncheckedUpdateWithoutInterviewsInput = {
   email?: Prisma.StringFieldUpdateOperationsInput | string
   password?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authProvider?: Prisma.EnumAuthProviderFieldUpdateOperationsInput | $Enums.AuthProvider
-  freeCredits?: Prisma.IntFieldUpdateOperationsInput | number
-  paidCredits?: Prisma.IntFieldUpdateOperationsInput | number
   refreshToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  credits?: Prisma.IntFieldUpdateOperationsInput | number
   plan?: Prisma.EnumPlanFieldUpdateOperationsInput | $Enums.Plan
   stripeCustomerId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   stripeSubscriptionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   planExpiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   passwordTokens?: Prisma.PasswordTokenUncheckedUpdateManyWithoutUserNestedInput
 }
 
@@ -861,15 +825,14 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   email?: boolean
   password?: boolean
   authProvider?: boolean
-  freeCredits?: boolean
-  paidCredits?: boolean
   refreshToken?: boolean
-  createdAt?: boolean
-  updatedAt?: boolean
+  credits?: boolean
   plan?: boolean
   stripeCustomerId?: boolean
   stripeSubscriptionId?: boolean
   planExpiresAt?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
   interviews?: boolean | Prisma.User$interviewsArgs<ExtArgs>
   passwordTokens?: boolean | Prisma.User$passwordTokensArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
@@ -881,15 +844,14 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   email?: boolean
   password?: boolean
   authProvider?: boolean
-  freeCredits?: boolean
-  paidCredits?: boolean
   refreshToken?: boolean
-  createdAt?: boolean
-  updatedAt?: boolean
+  credits?: boolean
   plan?: boolean
   stripeCustomerId?: boolean
   stripeSubscriptionId?: boolean
   planExpiresAt?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -898,15 +860,14 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   email?: boolean
   password?: boolean
   authProvider?: boolean
-  freeCredits?: boolean
-  paidCredits?: boolean
   refreshToken?: boolean
-  createdAt?: boolean
-  updatedAt?: boolean
+  credits?: boolean
   plan?: boolean
   stripeCustomerId?: boolean
   stripeSubscriptionId?: boolean
   planExpiresAt?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectScalar = {
@@ -915,18 +876,17 @@ export type UserSelectScalar = {
   email?: boolean
   password?: boolean
   authProvider?: boolean
-  freeCredits?: boolean
-  paidCredits?: boolean
   refreshToken?: boolean
-  createdAt?: boolean
-  updatedAt?: boolean
+  credits?: boolean
   plan?: boolean
   stripeCustomerId?: boolean
   stripeSubscriptionId?: boolean
   planExpiresAt?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "password" | "authProvider" | "freeCredits" | "paidCredits" | "refreshToken" | "createdAt" | "updatedAt" | "plan" | "stripeCustomerId" | "stripeSubscriptionId" | "planExpiresAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "password" | "authProvider" | "refreshToken" | "credits" | "plan" | "stripeCustomerId" | "stripeSubscriptionId" | "planExpiresAt" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   interviews?: boolean | Prisma.User$interviewsArgs<ExtArgs>
   passwordTokens?: boolean | Prisma.User$passwordTokensArgs<ExtArgs>
@@ -947,15 +907,14 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     email: string
     password: string | null
     authProvider: $Enums.AuthProvider
-    freeCredits: number
-    paidCredits: number
     refreshToken: string | null
-    createdAt: Date
-    updatedAt: Date
+    credits: number
     plan: $Enums.Plan
     stripeCustomerId: string | null
     stripeSubscriptionId: string | null
     planExpiresAt: Date | null
+    createdAt: Date
+    updatedAt: Date
   }, ExtArgs["result"]["user"]>
   composites: {}
 }
@@ -1386,15 +1345,14 @@ export interface UserFieldRefs {
   readonly email: Prisma.FieldRef<"User", 'String'>
   readonly password: Prisma.FieldRef<"User", 'String'>
   readonly authProvider: Prisma.FieldRef<"User", 'AuthProvider'>
-  readonly freeCredits: Prisma.FieldRef<"User", 'Int'>
-  readonly paidCredits: Prisma.FieldRef<"User", 'Int'>
   readonly refreshToken: Prisma.FieldRef<"User", 'String'>
-  readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
-  readonly updatedAt: Prisma.FieldRef<"User", 'DateTime'>
+  readonly credits: Prisma.FieldRef<"User", 'Int'>
   readonly plan: Prisma.FieldRef<"User", 'Plan'>
   readonly stripeCustomerId: Prisma.FieldRef<"User", 'String'>
   readonly stripeSubscriptionId: Prisma.FieldRef<"User", 'String'>
   readonly planExpiresAt: Prisma.FieldRef<"User", 'DateTime'>
+  readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
+  readonly updatedAt: Prisma.FieldRef<"User", 'DateTime'>
 }
     
 

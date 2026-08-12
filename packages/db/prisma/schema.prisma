@@ -13,11 +13,8 @@ model User {
   email        String       @unique
   password     String?
   authProvider AuthProvider @default(LOCAL)
-  freeCredits  Int          @default(1)
-  paidCredits  Int          @default(0)
   refreshToken String?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  credits      Int          @default(1)
 
   plan                 Plan      @default(FREE)
   stripeCustomerId     String?   @unique
@@ -26,6 +23,9 @@ model User {
 
   interviews     Interview[]
   passwordTokens PasswordToken[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model PasswordToken {

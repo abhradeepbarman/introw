@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import {
   createInterview,
-  createSession,
+  startSession,
   downloadReport,
   downloadTranscript,
   getInterviewResult,
@@ -14,7 +14,7 @@ const router = Router();
 
 router.post('/', auth, uploadResume, createInterview);
 router.get('/', auth, listInterviews);
-router.post('/:id/session', auth, createSession);
+router.post('/:id/session', auth, startSession);
 router.post('/:id/result', auth, getInterviewResult);
 router.get('/:id/report', auth, downloadReport);
 router.get('/:id/transcript', auth, downloadTranscript);

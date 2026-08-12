@@ -13,25 +13,20 @@ export const OAUTH_STATE_MAX_AGE = 10 * 60 * 1000;
 
 export const PASSWORD_TOKEN_TTL = 60 * 60 * 1000;
 
-export const PLANS = {
-  FREE: {
-    id: 'FREE',
-    name: 'Free',
-    price: 0,
-    currency: 'INR',
-    credits: 1,
-    maxInterviewMinutes: 2,
-    features: ['1 interview credit', 'Max interview: 2 minutes'],
-  },
-  STARTER: {
-    id: 'STARTER',
-    name: 'Starter',
-    price: 999,
-    currency: 'INR',
-    credits: 10,
-    maxInterviewMinutes: 5,
-    features: ['10 interview credits', 'Max interview: 5 minutes', 'Resume upload (soon)'],
-  },
+export const CREDIT_MINUTES = 5;
+
+export const FREE_PLAN = {
+  id: 'FREE',
+  name: 'Free',
+  price: 0,
+  currency: 'INR',
+
+  credits: 1,
+  billingInterval: null,
+
+  resumeUpload: false,
+
+  features: ['1 free interview', 'Up to 5 minutes', 'Basic AI feedback'],
 } as const;
 
 export const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';

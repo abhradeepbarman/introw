@@ -33,15 +33,16 @@ const formatDate = (iso: string) =>
 
 function CurrentPlan({
   subscription,
+  planName,
   onManage,
   busy,
 }: {
   subscription: Subscription;
+  planName: string;
   onManage: () => void;
   busy: boolean;
 }) {
-  const { plan, credits, freeCredits, paidCredits, nextInterviewMinutes, renewsAt } = subscription;
-  const mixedCredits = freeCredits > 0 && paidCredits > 0;
+  const { plan, credits, creditMinutes, renewsAt } = subscription;
 
   return (
     <section className="overflow-hidden rounded-2xl bg-ink text-ink-foreground shadow-[0_30px_80px_-40px_hsl(196_44%_8%/0.55)]">
@@ -54,9 +55,9 @@ function CurrentPlan({
 
       <div className="flex flex-wrap items-end justify-between gap-6 px-5 py-7 sm:px-7">
         <div>
-          <p className="font-display text-3xl font-bold tracking-[-0.03em]">{plan.name}</p>
+          <p className="font-display text-3xl font-bold tracking-[-0.03em]">{planName}</p>
           <p className="mt-2 text-ink-muted">
-            Your next interview runs up to {nextInterviewMinutes} minutes.
+            Your next interview runs up to {creditMinutes} minutes.
           </p>
         </div>
 
@@ -67,15 +68,10 @@ function CurrentPlan({
           <p className="mt-2 label-mono text-ink-muted">
             {credits === 1 ? 'credit left' : 'credits left'}
           </p>
-          {mixedCredits && (
-            <p className="mt-1.5 font-mono text-[0.6875rem] text-ink-muted">
-              incl. {freeCredits} shorter free {freeCredits === 1 ? 'credit' : 'credits'}, used last
-            </p>
-          )}
         </div>
       </div>
 
-      {plan.id === 'STARTER' && (
+      {plan === 'STARTER' && (
         <div className="border-t border-ink-border px-5 py-4 sm:px-7">
           <button
             type="button"
@@ -277,6 +273,7 @@ const BillingPage = () => {
               <div className="space-y-8">
                 <CurrentPlan
                   subscription={subscription}
+                  planName={plans.find((p) => p.id === subscription.plan)?.name ?? subscription.plan}
                   onManage={() => void redirectToStripe('portal')}
                   busy={busy === 'portal'}
                 />
@@ -286,7 +283,7 @@ const BillingPage = () => {
                     <PlanCard
                       key={plan.id}
                       plan={plan}
-                      isCurrent={plan.id === subscription.plan.id}
+                      isCurrent={plan.id === subscription.plan}
                       onUpgrade={() => void redirectToStripe('checkout')}
                       busy={busy === 'checkout'}
                     />

@@ -4,6 +4,7 @@ import { hangupCall, sendWrapUpInstruction } from '../lib/sideband';
 import { logger } from '../utils/logger';
 
 const WRAP_UP_LEAD_MS = 25_000;
+
 const expireInterviews = async () => {
   const running = await prisma.interview.findMany({
     where: { status: 'IN_PROGRESS', startedAt: { not: null } },

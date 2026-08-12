@@ -5,6 +5,7 @@ import {
   registerSchema,
   resetPasswordSchema,
 } from '@repo/common/validations';
+import { prisma } from '@repo/db';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import type { NextFunction, Request, Response } from 'express';
@@ -18,7 +19,6 @@ import {
   PASSWORD_TOKEN_TTL,
   REFRESH_TOKEN_COOKIE,
 } from '../constants';
-import { prisma } from '@repo/db';
 import { getGoogleProfile, getGoogleTokens, sendEmail } from '../services';
 import { forgotPasswordEmailTemplate } from '../templates';
 import asyncHandler from '../utils/async-handler';
@@ -26,44 +26,9 @@ import CustomErrorHandler from '../utils/custom-error-handler';
 import ResponseHandler from '../utils/response-handler';
 import { clearAuthCookies, cookieOptions, generateTokens, setCookies } from '../utils/tokens';
 
-const normalizeEmail = (email: string) => email.trim().toLowerCase();
-
-const digest = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
-
-type SessionUser = {
-  id: string;
-  name: string;
-  email: string;
-  authProvider: AuthProvider;
-  freeCredits: number;
-  paidCredits: number;
-};
-
-const issueSession = async (res: Response, userId: string) => {
-  const { accessToken, refreshToken } = generateTokens(userId);
-  setCookies(res, accessToken, refreshToken);
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: { refreshToken: await bcrypt.hash(digest(refreshToken), BCRYPT_ROUNDS) },
-  });
-
-  return accessToken;
-};
-
-const sessionPayload = (user: SessionUser, accessToken: string) => ({
-  id: user.id,
-  name: user.name,
-  email: user.email,
-  authProvider: user.authProvider,
-  credits: user.freeCredits + user.paidCredits,
-  access_token: accessToken,
-});
-
 export const userRegister = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, password, email: rawEmail } = registerSchema.parse(req.body);
-    const email = normalizeEmail(rawEmail);
+    const { name, password, email } = registerSchema.parse(req.body);
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
@@ -75,19 +40,29 @@ export const userRegister = asyncHandler(
       data: { name, email, password: hashedPassword, authProvider: AuthProvider.LOCAL },
     });
 
-    const accessToken = await issueSession(res, newUser.id);
+    const { accessToken, refreshToken } = generateTokens(newUser.id);
+    setCookies(res, accessToken, refreshToken);
 
-    return res
-      .status(201)
-      .send(
-        ResponseHandler(201, 'User registered successfully', sessionPayload(newUser, accessToken)),
-      );
+    await prisma.user.update({
+      where: { id: newUser.id },
+      data: { refreshToken },
+    });
+
+    return res.status(201).send(
+      ResponseHandler(201, 'User registered successfully', {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        authProvider: newUser.authProvider,
+        credits: newUser.credits,
+        access_token: accessToken,
+      }),
+    );
   },
 );
 
 export const userLogin = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-  const { password, email: rawEmail } = loginSchema.parse(req.body);
-  const email = normalizeEmail(rawEmail);
+  const { password, email } = loginSchema.parse(req.body);
 
   const existingUser = await prisma.user.findUnique({ where: { email } });
 
@@ -100,17 +75,24 @@ export const userLogin = asyncHandler(async (req: Request, res: Response, next: 
     return next(CustomErrorHandler.wrongCredentials());
   }
 
-  const accessToken = await issueSession(res, existingUser.id);
+  const { accessToken, refreshToken } = generateTokens(existingUser.id);
+  setCookies(res, accessToken, refreshToken);
 
-  return res
-    .status(200)
-    .send(
-      ResponseHandler(
-        200,
-        'User logged in successfully',
-        sessionPayload(existingUser, accessToken),
-      ),
-    );
+  await prisma.user.update({
+    where: { id: existingUser.id },
+    data: { refreshToken },
+  });
+
+  return res.status(200).send(
+    ResponseHandler(200, 'User logged in successfully', {
+      id: existingUser.id,
+      name: existingUser.name,
+      email: existingUser.email,
+      authProvider: existingUser.authProvider,
+      credits: existingUser.credits,
+      access_token: accessToken,
+    }),
+  );
 });
 
 export const getCurrentUser = asyncHandler(async (req: Request, res: Response) => {
@@ -143,26 +125,33 @@ export const refreshAccessToken = asyncHandler(
 
     const userDetails = await prisma.user.findUnique({ where: { id: decoded.id } });
 
-    if (
-      !userDetails?.refreshToken ||
-      !(await bcrypt.compare(digest(token), userDetails.refreshToken))
-    ) {
+    if (!userDetails?.refreshToken || userDetails.refreshToken !== token) {
       return next(CustomErrorHandler.unAuthorized());
     }
 
-    const accessToken = await issueSession(res, userDetails.id);
+    const { accessToken, refreshToken } = generateTokens(userDetails.id);
+    setCookies(res, accessToken, refreshToken);
 
-    return res
-      .status(200)
-      .send(
-        ResponseHandler(200, 'Refresh token generated', sessionPayload(userDetails, accessToken)),
-      );
+    await prisma.user.update({
+      where: { id: userDetails.id },
+      data: { refreshToken },
+    });
+
+    return res.status(200).send(
+      ResponseHandler(200, 'Refresh token generated', {
+        id: userDetails.id,
+        name: userDetails.name,
+        email: userDetails.email,
+        authProvider: userDetails.authProvider,
+        credits: userDetails.credits,
+        access_token: accessToken,
+      }),
+    );
   },
 );
 
 export const sendForgotPasswordEmail = asyncHandler(async (req: Request, res: Response) => {
-  const { email: rawEmail } = forgotPasswordSchema.parse(req.body);
-  const email = normalizeEmail(rawEmail);
+  const { email } = forgotPasswordSchema.parse(req.body);
 
   const genericResponse = () =>
     res
@@ -176,8 +165,9 @@ export const sendForgotPasswordEmail = asyncHandler(async (req: Request, res: Re
     return genericResponse();
   }
 
-  const rawToken = crypto.randomBytes(32).toString('hex');
-  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const token = jwt.sign({ id: existingUser.id }, envConfig.ACCESS_SECRET, {
+    expiresIn: PASSWORD_TOKEN_TTL / 1000,
+  });
 
   await prisma.$transaction([
     prisma.passwordToken.deleteMany({
@@ -186,13 +176,13 @@ export const sendForgotPasswordEmail = asyncHandler(async (req: Request, res: Re
     prisma.passwordToken.create({
       data: {
         userId: existingUser.id,
-        token: tokenHash,
+        token,
         expiresAt: new Date(Date.now() + PASSWORD_TOKEN_TTL),
       },
     }),
   ]);
 
-  const link = `${envConfig.APP_URL}/reset-password/${rawToken}`;
+  const link = `${envConfig.APP_URL}/reset-password/${token}`;
   const html = forgotPasswordEmailTemplate(existingUser.name, link);
   await sendEmail({ to: email, subject: 'Reset Your Password', body: html });
 
@@ -208,8 +198,15 @@ export const resetPassword = asyncHandler(
       return next(CustomErrorHandler.badRequest('Token is invalid'));
     }
 
+    let decoded: JwtPayload;
+    try {
+      decoded = jwt.verify(token, envConfig.ACCESS_SECRET) as JwtPayload;
+    } catch {
+      return next(CustomErrorHandler.badRequest('Token is invalid or expired'));
+    }
+
     const existingToken = await prisma.passwordToken.findFirst({
-      where: { token: digest(token), usedAt: null, expiresAt: { gt: new Date() } },
+      where: { token, userId: decoded.id, usedAt: null },
     });
 
     if (!existingToken) {
@@ -220,11 +217,11 @@ export const resetPassword = asyncHandler(
 
     await prisma.$transaction([
       prisma.user.update({
-        where: { id: existingToken.userId },
+        where: { id: decoded.id },
         data: { password: hashedPassword, refreshToken: null },
       }),
       prisma.passwordToken.updateMany({
-        where: { userId: existingToken.userId, usedAt: null },
+        where: { userId: decoded.id, usedAt: null },
         data: { usedAt: new Date() },
       }),
     ]);
@@ -287,7 +284,7 @@ export const googleCallback = asyncHandler(async (req: Request, res: Response) =
     return failRedirect('Your Google account email is not verified.');
   }
 
-  const email = normalizeEmail(profile.email);
+  const email = profile.email.trim().toLowerCase();
 
   let user = await prisma.user.findUnique({ where: { email } });
 
@@ -303,7 +300,13 @@ export const googleCallback = asyncHandler(async (req: Request, res: Response) =
     },
   });
 
-  await issueSession(res, user.id);
+  const { accessToken, refreshToken } = generateTokens(user.id);
+  setCookies(res, accessToken, refreshToken);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { refreshToken },
+  });
 
   return res.redirect(`${envConfig.APP_URL}/auth/google-callback`);
 });
