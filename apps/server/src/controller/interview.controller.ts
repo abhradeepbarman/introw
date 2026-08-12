@@ -7,11 +7,13 @@ import axios from 'axios';
 import envConfig from '../config/env';
 import { PLANS } from '../constants';
 import { prisma } from '@repo/db';
+import { uploadResume } from '../lib/imagekit';
 import { initSideband } from '../lib/sideband';
 import { buildReportPdf } from '../templates';
 import asyncHandler from '../utils/async-handler';
 import CustomErrorHandler from '../utils/custom-error-handler';
 import { evaluateInterview } from '../utils/evaluate-interview';
+import { parseResume } from '../utils/parse-resume';
 import ResponseHandler from '../utils/response-handler';
 
 type GithubRepo = {
@@ -27,12 +29,11 @@ const ownedBy = (interviewId: string, userId: string) => ({
   OR: [{ userId }, { userId: null }],
 });
 
-export const createInterview = asyncHandler(async (req, res) => {
-  const { githubUrl } = interviewSourcesSchema.parse(req.body);
+const fetchGithubMetadata = async (githubUrl: string) => {
   const githubUsername = githubUrl.replace(/\/+$/, '').split('/').pop();
 
   if (!githubUsername) {
-    return res.status(400).send(ResponseHandler(400, 'Invalid GitHub URL', null));
+    throw CustomErrorHandler.badRequest('Invalid GitHub URL');
   }
 
   const githubApiUrl = `https://api.github.com/users/${encodeURIComponent(githubUsername)}/repos`;
@@ -62,12 +63,10 @@ export const createInterview = asyncHandler(async (req, res) => {
     });
   } catch (err: any) {
     if (err.response?.status === 404) {
-      return res.status(404).send(ResponseHandler(404, 'GitHub user not found', null));
+      throw CustomErrorHandler.notFound('GitHub user not found');
     }
     if (err.response?.status === 403 || err.response?.status === 429) {
-      return res
-        .status(429)
-        .send(ResponseHandler(429, 'GitHub rate limit exceeded, try again shortly', null));
+      throw new CustomErrorHandler(429, 'GitHub rate limit exceeded, try again shortly');
     }
     throw err;
   }
@@ -84,14 +83,32 @@ export const createInterview = asyncHandler(async (req, res) => {
     }));
 
   if (githubMetadata.length === 0) {
-    return res
-      .status(422)
-      .send(ResponseHandler(422, 'No suitable public repositories found for this user', null));
+    throw new CustomErrorHandler(422, 'No suitable public repositories found for this user');
   }
+
+  return githubMetadata;
+};
+
+export const createInterview = asyncHandler(async (req, res, next) => {
+  const { githubUrl } = interviewSourcesSchema.parse(req.body);
+
+  if (!githubUrl && !req.file) {
+    return next(CustomErrorHandler.badRequest('Add a GitHub profile, a résumé, or both'));
+  }
+
+  // Either source alone is enough, but a source the candidate did supply has to work —
+  // failing loudly beats interviewing them on half of what they handed us.
+  const githubMetadata = githubUrl ? await fetchGithubMetadata(githubUrl) : [];
+
+  const [resumeUrl, resumeData] = req.file
+    ? await Promise.all([uploadResume(req.file.buffer, req.user.id), parseResume(req.file.buffer)])
+    : [];
 
   const newInterview = await prisma.interview.create({
     data: {
       githubMetadata,
+      resumeUrl,
+      resumeData,
       userId: req.user.id,
     },
   });

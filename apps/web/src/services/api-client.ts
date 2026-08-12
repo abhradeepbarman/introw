@@ -72,7 +72,8 @@ const send = (path: string, init?: RequestInit) =>
     credentials: 'include',
     ...init,
     headers: {
-      'Content-Type': 'application/json',
+      // FormData sets its own Content-Type, multipart boundary included.
+      ...(init?.body instanceof FormData ? null : { 'Content-Type': 'application/json' }),
       ...init?.headers,
     },
   });

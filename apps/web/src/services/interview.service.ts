@@ -4,7 +4,7 @@ import {
   type Paginated,
   type Rubric,
 } from '@repo/common/validations';
-import { apiGet, apiPost, apiRequest, downloadFile } from './api-client';
+import { apiGet, apiRequest, downloadFile } from './api-client';
 
 export type CreateInterviewResponse = {
   id: string;
@@ -39,8 +39,13 @@ export type InterviewSummary = {
   messageCount: number;
 };
 
-export const createInterview = (sources: InterviewSources) =>
-  apiPost<CreateInterviewResponse>('/interviews', sources);
+export const createInterview = (sources: InterviewSources, resume?: File | null) => {
+  const body = new FormData();
+  if (sources.githubUrl) body.set('githubUrl', sources.githubUrl);
+  if (resume) body.set('resume', resume);
+
+  return apiRequest<CreateInterviewResponse>('/interviews', { method: 'POST', body });
+};
 
 export const createInterviewSession = (interviewId: string, offerSdp: string) =>
   apiRequest<InterviewSessionResponse>(`/interviews/${interviewId}/session`, {

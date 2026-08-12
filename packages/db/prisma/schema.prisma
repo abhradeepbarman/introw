@@ -43,6 +43,8 @@ model PasswordToken {
 model Interview {
   id             String           @id @default(uuid())
   githubMetadata Json
+  resumeUrl      String?
+  resumeData     Json?
   status         InterviewStatus  @default(PENDING)
   callId         String?
   startedAt      DateTime?

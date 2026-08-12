@@ -17,12 +17,23 @@ import { ApiError } from '@/services/api-client';
 import { createInterview } from '@/services/interview.service';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  githubUrlSchema,
+  GITHUB_PROFILE,
   interviewSourcesSchema,
+  RESUME_MAX_BYTES,
+  RESUME_MIME_TYPE,
   type InterviewSources,
 } from '@repo/common/validations';
-import { ArrowRight, FileText, Github, Mic, ScrollText, ShieldCheck } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import {
+  ArrowRight,
+  FileText,
+  Github,
+  Mic,
+  ScrollText,
+  ShieldCheck,
+  Upload,
+  X,
+} from 'lucide-react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
@@ -54,7 +65,7 @@ const STEPS = [
   {
     icon: Github,
     title: 'Point us at your work',
-    body: 'We read your public repositories — languages, structure, and what you shipped recently. Résumés are next.',
+    body: 'We read your public repositories — languages, structure, and what you shipped recently — and your résumé if you attach one.',
   },
   {
     icon: Mic,
@@ -133,9 +144,33 @@ const StartInterviewPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const [resume, setResume] = useState<File | null>(null);
+  const [resumeError, setResumeError] = useState<string | null>(null);
 
   const values = form.watch();
-  const githubReady = githubUrlSchema.safeParse(values.githubUrl).success;
+  const githubReady = GITHUB_PROFILE.test(values.githubUrl?.trim() ?? '');
+  const hasSource = githubReady || Boolean(resume);
+
+  const onResumeChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    event.target.value = '';
+    if (!file) return;
+
+    if (file.type !== RESUME_MIME_TYPE) {
+      setResume(null);
+      setResumeError('Your résumé has to be a PDF.');
+      return;
+    }
+
+    if (file.size > RESUME_MAX_BYTES) {
+      setResume(null);
+      setResumeError(`Keep your résumé under ${RESUME_MAX_BYTES / 1024 / 1024}MB.`);
+      return;
+    }
+
+    setResume(file);
+    setResumeError(null);
+  };
 
   const onSubmit = async (sources: InterviewSources) => {
     form.clearErrors('root');
@@ -146,7 +181,7 @@ const StartInterviewPage = () => {
     }
 
     try {
-      const { id } = await createInterview(sources);
+      const { id } = await createInterview(sources, resume);
       navigate(`/interview/${id}`);
     } catch (error) {
       if (error instanceof ApiError) {
@@ -181,7 +216,7 @@ const StartInterviewPage = () => {
             </h1>
 
             <p className="mt-7 max-w-lg text-lg leading-relaxed text-muted-foreground">
-              Point Intervue at your work — your GitHub today, your résumé next — and it interviews
+              Point Intervue at your work — your GitHub, your résumé, or both — and it interviews
               you on what is actually there. Out loud, with follow-ups, and a scored report at the
               end.
             </p>
@@ -189,7 +224,7 @@ const StartInterviewPage = () => {
             <dl className="mt-9 flex flex-wrap gap-x-10 gap-y-5 border-t border-border pt-7">
               <div>
                 <dt className="label-mono text-muted-foreground">Sources</dt>
-                <dd className="mt-1.5 text-base font-medium">GitHub now, résumé next</dd>
+                <dd className="mt-1.5 text-base font-medium">GitHub, résumé, or both</dd>
               </div>
               <div>
                 <dt className="label-mono text-muted-foreground">Format</dt>
@@ -209,12 +244,13 @@ const StartInterviewPage = () => {
             >
               <div className="flex items-baseline justify-between gap-4 px-6 pt-6">
                 <h2 className="label-mono text-muted-foreground">What we interview from</h2>
+                <p className="text-sm text-muted-foreground">Either one is enough</p>
               </div>
 
               <div className="mt-5 h-1 bg-muted" role="presentation">
                 <div
                   className="h-full bg-brand transition-[width] duration-500 ease-out"
-                  style={{ width: `${Number(githubReady) * 100}%` }}
+                  style={{ width: `${Number(hasSource) * 100}%` }}
                 />
               </div>
 
@@ -265,29 +301,76 @@ const StartInterviewPage = () => {
                     )}
                   />
 
-                  <div className="rounded-lg border border-dashed border-border bg-secondary/50 px-4 py-3.5">
+                  <div className="space-y-2.5">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <p className="flex items-center gap-2 text-sm font-medium text-foreground">
                         <span
                           aria-hidden
-                          className="grid size-7 place-items-center rounded-md border border-border bg-card"
+                          className={cn(
+                            'grid size-7 place-items-center rounded-md border transition-colors duration-300',
+                            resume ? 'border-brand/40 bg-brand-wash' : 'border-border bg-secondary',
+                          )}
                         >
-                          <FileText className="size-3.5 text-muted-foreground" />
+                          <FileText
+                            className={cn(
+                              'size-3.5',
+                              resume ? 'text-brand' : 'text-muted-foreground',
+                            )}
+                          />
                         </span>
                         Résumé
                       </p>
-                      <span className="label-mono text-muted-foreground">Soon</span>
+                      <span
+                        className={cn(
+                          'font-mono text-[0.6875rem] uppercase tracking-[0.14em] transition-colors',
+                          resume ? 'text-brand' : 'text-muted-foreground',
+                        )}
+                      >
+                        {resume ? 'Attached' : 'Awaiting'}
+                      </span>
                     </div>
-                    <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
-                      Upload a résumé and the interviewer will press on what it claims, not just
-                      what you pushed.
-                    </p>
+
+                    {resume ? (
+                      <div className="flex items-center gap-3 rounded-lg border border-brand/30 bg-brand-wash px-4 py-3">
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                          {resume.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setResume(null)}
+                          aria-label={`Remove ${resume.name}`}
+                          className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-brand/40 focus-visible:outline-none"
+                        >
+                          <X className="size-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-border bg-secondary/50 px-4 py-3.5 transition-colors hover:border-brand/40 hover:bg-brand-wash/40 focus-within:ring-2 focus-within:ring-brand/40">
+                        <Upload className="size-4 shrink-0 text-muted-foreground" />
+                        <span className="text-sm leading-relaxed text-muted-foreground">
+                          Attach a PDF and the interviewer will press on what it claims, not just
+                          what you pushed.
+                        </span>
+                        <input
+                          type="file"
+                          accept={RESUME_MIME_TYPE}
+                          onChange={onResumeChange}
+                          className="sr-only"
+                        />
+                      </label>
+                    )}
+
+                    {resumeError && (
+                      <p className="text-sm text-destructive" role="alert">
+                        {resumeError}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-3">
                     <Button
                       type="submit"
-                      disabled={form.formState.isSubmitting}
+                      disabled={form.formState.isSubmitting || (Boolean(user) && !hasSource)}
                       className="h-12 w-full rounded-lg bg-brand text-[0.9375rem] font-semibold text-brand-foreground shadow-sm transition-transform hover:bg-brand-hover focus-visible:ring-brand/40 active:scale-[0.99]"
                     >
                       {form.formState.isSubmitting
@@ -305,7 +388,9 @@ const StartInterviewPage = () => {
                       role={form.formState.errors.root ? 'alert' : undefined}
                     >
                       {form.formState.errors.root?.message ??
-                        'Your link should point to a public profile.'}
+                        (hasSource
+                          ? 'Your link should point to a public profile.'
+                          : 'Link a GitHub profile or attach a résumé to start.')}
                     </p>
                   </div>
                 </form>

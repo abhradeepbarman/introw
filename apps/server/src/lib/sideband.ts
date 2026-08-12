@@ -1,4 +1,5 @@
 import WebSocket from 'ws';
+import { resumeSchema, type Resume } from '@repo/common/validations';
 import type { Interview } from '@repo/db';
 import { UserType } from '@repo/db';
 import envConfig from '../config/env';
@@ -28,6 +29,23 @@ export const sendWrapUpInstruction = (interviewId: string) => {
     }),
   );
 };
+
+const describeResume = (resume: Resume) =>
+  [
+    resume.headline && `Headline: ${resume.headline}`,
+    resume.skills.length > 0 && `Skills: ${resume.skills.join(', ')}`,
+    ...resume.experience.map(
+      (role) =>
+        `- ${role.role} at ${role.company}${role.duration ? ` (${role.duration})` : ''}` +
+        role.highlights.map((highlight) => `\n    · ${highlight}`).join(''),
+    ),
+    ...resume.projects.map(
+      (project) =>
+        `- Project ${project.name} (${project.technologies.join(', ') || 'unspecified stack'}): ${project.description}`,
+    ),
+  ]
+    .filter(Boolean)
+    .join('\n');
 
 const describeDuration = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
@@ -75,6 +93,17 @@ export const initSideband = async (callId: string, interview: Interview, remaini
     .map((r) => `- ${r.name} (${r.language ?? 'unknown'}): ${r.description ?? 'no description'}`)
     .join('\n');
 
+  const resume = resumeSchema.safeParse(interview.resumeData);
+
+  // A candidate supplies GitHub, a résumé, or both — never lead with a heading we cannot fill.
+  const sources = [
+    repos.length > 0 && `Candidate's repos:\n${repoSummary}`,
+    resume.success &&
+      `Candidate's résumé:\n${describeResume(resume.data)}\n\nPress on what the résumé claims — ask them to back up a highlight with specifics.`,
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+
   ws.on('open', () => {
     console.log('✅ Sideband connected');
 
@@ -94,8 +123,7 @@ export const initSideband = async (callId: string, interview: Interview, remaini
             Evaluate the candidate.
             Ask follow-up questions.
 
-            Candidate's repos:
-            ${repoSummary}`,
+            ${sources}`,
         },
       }),
     );
