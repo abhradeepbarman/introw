@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/auth-context';
-import { ChevronDown, CreditCard, History, LogOut } from 'lucide-react';
+import { ChevronDown, History, LogOut } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const initialsOf = (name: string) =>
@@ -76,13 +76,6 @@ export function UserNav() {
             <Link to="/interviews">
               <History />
               Past interviews
-            </Link>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem asChild>
-            <Link to="/billing">
-              <CreditCard />
-              Billing
             </Link>
           </DropdownMenuItem>
 

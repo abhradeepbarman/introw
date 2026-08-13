@@ -8,7 +8,6 @@ declare global {
         name: string;
         email: string;
         authProvider: AuthProvider;
-        credits: number;
       };
     }
   }

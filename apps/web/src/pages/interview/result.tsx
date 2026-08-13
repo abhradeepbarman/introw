@@ -1,11 +1,12 @@
 import { AppHeader, BackLink } from '@/components/common/app-header';
 import { UserNav } from '@/components/common/user-nav';
 import { Button } from '@/components/ui/button';
-import { ApiError } from '@/services/api-client';
+import { ApiError } from '@/lib/api-error';
 import {
   downloadReport,
   downloadTranscript,
   getInterviewResult,
+  UserType,
   type InterviewResult,
   type TranscriptLine,
 } from '@/services/interview.service';
@@ -247,7 +248,7 @@ function ResultFooter({
             <li key={`${line.at}-${index}`} className="space-y-1">
               <p
                 className={`label-mono ${
-                  line.speaker === 'CANDIDATE' ? 'text-brand' : 'text-muted-foreground'
+                  line.speaker === UserType.CANDIDATE ? 'text-brand' : 'text-muted-foreground'
                 }`}
               >
                 {SPEAKER_LABEL[line.speaker]}

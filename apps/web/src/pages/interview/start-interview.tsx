@@ -13,7 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/auth-context';
 import { cn } from '@/lib/utils';
-import { ApiError } from '@/services/api-client';
+import { ApiError } from '@/lib/api-error';
 import { createInterview } from '@/services/interview.service';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -185,7 +185,7 @@ const StartInterviewPage = () => {
       navigate(`/interview/${id}`);
     } catch (error) {
       if (error instanceof ApiError) {
-        const fieldError = error.fieldErrors.find((issue) => issue.field === 'githubUrl');
+        const fieldError = error.data?.find((issue) => issue.field === 'githubUrl');
         if (fieldError) {
           form.setError('githubUrl', { message: fieldError.message });
           return;

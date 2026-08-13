@@ -2,33 +2,41 @@ import {
   interviewSourcesSchema,
   paginationQuerySchema,
   rubricSchema,
+  RESUME_MIME_TYPE,
 } from '@repo/common/validations';
-import envConfig from '../config/env';
-import { CREDIT_MINUTES } from '../constants';
-import { prisma } from '@repo/db';
-import { uploadResume } from '../lib/imagekit';
-import { initSideband } from '../lib/sideband';
+import { readFile, unlink } from 'fs/promises';
+import { envConfig, sessionConfig } from '../config';
+import { InterviewStatus, prisma, UserType } from '@repo/db';
+import { initSideband, uploadFile } from '../lib';
 import { fetchGithubMetadata } from '../services';
 import { buildReportPdf } from '../templates';
-import asyncHandler from '../utils/async-handler';
-import CustomErrorHandler from '../utils/custom-error-handler';
-import { evaluateInterview } from '../utils/evaluate-interview';
-import { parseResume } from '../utils/parse-resume';
-import ResponseHandler from '../utils/response-handler';
-import { sessionConfig } from '../config/session';
+import { asyncHandler, CustomErrorHandler, ResponseHandler } from '../utils';
+import { evaluateInterview, parseResume } from '../services/ai';
 
 export const createInterview = asyncHandler(async (req, res, next) => {
   const { githubUrl } = interviewSourcesSchema.parse(req.body);
+  const { file } = req;
 
-  if (!githubUrl && !req.file) {
+  if (!githubUrl && !file) {
     return next(CustomErrorHandler.badRequest('Add a GitHub profile, a résumé, or both'));
   }
 
   const githubMetadata = githubUrl ? await fetchGithubMetadata(githubUrl) : [];
 
-  const [resumeUrl, resumeData] = req.file
-    ? await Promise.all([uploadResume(req.file.buffer, req.user.id), parseResume(req.file.buffer)])
-    : [];
+  let resumeUrl: string | undefined;
+  let resumeData: Awaited<ReturnType<typeof parseResume>> | undefined;
+
+  if (file) {
+    const buffer = await readFile(file.path);
+    try {
+      [resumeUrl, resumeData] = await Promise.all([
+        uploadFile(buffer, `${req.user.id}-${Date.now()}.pdf`, '/resumes', RESUME_MIME_TYPE),
+        parseResume(buffer),
+      ]);
+    } finally {
+      await unlink(file.path).catch(() => {});
+    }
+  }
 
   const newInterview = await prisma.interview.create({
     data: {
@@ -58,31 +66,11 @@ export const startSession = asyncHandler(async (req, res, next) => {
     return next(CustomErrorHandler.notFound('Interview not found'));
   }
 
-  if (interview.status === 'COMPLETED') {
+  if (interview.status === InterviewStatus.COMPLETED) {
     return next(CustomErrorHandler.badRequest('This interview has already ended'));
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { credits: true },
-  });
-
-  const isFirstStart = interview.startedAt === null;
-
-  if (isFirstStart && (user?.credits ?? 0) <= 0) {
-    return next(CustomErrorHandler.badRequest('You have no interview credits left'));
-  }
-
-  const maxTime = isFirstStart ? CREDIT_MINUTES * 60 : interview.maxTime;
-
-  const elapsed = isFirstStart
-    ? 0
-    : Math.floor((Date.now() - interview.startedAt!.getTime()) / 1000);
-  const remaining = maxTime - elapsed;
-
-  if (remaining <= 0) {
-    return next(CustomErrorHandler.badRequest('This interview has run out of time'));
-  }
+  //#region Connect to OpenAI Realtime API  for SDP exchange and call creation
 
   const fd = new FormData();
   fd.set('sdp', req.body);
@@ -103,26 +91,16 @@ export const startSession = asyncHandler(async (req, res, next) => {
 
   if (!callId) return next(CustomErrorHandler.notAllowed('Call ID not found in response'));
 
-  await prisma.$transaction([
-    prisma.interview.update({
-      where: { id: interview.id },
-      data: {
-        status: 'IN_PROGRESS',
-        callId,
-        maxTime,
-        ...(isFirstStart && { startedAt: new Date() }),
-      },
-    }),
-    ...(isFirstStart
-      ? [prisma.user.update({ where: { id: userId }, data: { credits: { decrement: 1 } } })]
-      : []),
-  ]);
+  await prisma.interview.update({
+    where: { id: interview.id },
+    data: { status: 'IN_PROGRESS', callId },
+  });
 
-  await initSideband(callId, interview, remaining);
+  //#endregion
 
-  return res
-    .status(200)
-    .send(ResponseHandler(200, 'Session created successfully', { sdp, remainingTime: remaining }));
+  await initSideband(callId, interview);
+
+  return res.status(200).send(ResponseHandler(200, 'Session created successfully', { sdp }));
 });
 
 export const listInterviews = asyncHandler(async (req, res) => {
@@ -218,7 +196,8 @@ export const downloadTranscript = asyncHandler(async (req, res, next) => {
   }
 
   const lines = interview.conversations.map(
-    (m) => `${m.createdBy === 'CANDIDATE' ? 'Candidate' : 'Interviewer'}: ${m.message}`,
+    (m) => `${m.createdBy === UserType.CANDIDATE ? 'Candidate' : 'Interviewer'}: ${m.message}`,
+    (m) => `${m.createdBy === UserType.CANDIDATE ? 'Candidate' : 'Interviewer'}: ${m.message}`,
   );
 
   const header = [

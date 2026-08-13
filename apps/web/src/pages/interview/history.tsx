@@ -2,7 +2,7 @@ import { AppHeader, BackLink } from '@/components/common/app-header';
 import { UserNav } from '@/components/common/user-nav';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { ApiError } from '@/services/api-client';
+import { ApiError } from '@/lib/api-error';
 import {
   downloadReport,
   downloadTranscript,

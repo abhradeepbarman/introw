@@ -1,7 +1,7 @@
 import { Brand } from '@/components/common/brand';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { ApiError } from '@/services/api-client';
+import { ApiError } from '@/lib/api-error';
 import { createInterviewSession } from '@/services/interview.service';
 import type { LucideIcon } from 'lucide-react';
 import { Bot, Mic, MicOff, PhoneOff, User } from 'lucide-react';
@@ -57,14 +57,13 @@ const InterviewRoom = () => {
   const [muted, setMuted] = useState(false);
   const [candidateSpeaking, setCandidateSpeaking] = useState(false);
   const [interviewerSpeaking, setInterviewerSpeaking] = useState(false);
-  const [remaining, setRemaining] = useState<number | null>(null);
 
-  const deadlineRef = useRef(0);
   const peerRef = useRef<RTCPeerConnection | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   const stopMicMeterRef = useRef<(() => void) | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  //#region Cleanup and teardown
   const teardown = useCallback(() => {
     stopMicMeterRef.current?.();
     stopMicMeterRef.current = null;
@@ -83,6 +82,10 @@ const InterviewRoom = () => {
     navigate(`/interview/${interviewId}/result`);
   }, [interviewId, navigate, teardown]);
 
+  useEffect(() => teardown, [teardown]);
+  //#endregion
+
+  //#region Join
   const join = useCallback(async () => {
     if (!interviewId) return;
 
@@ -90,11 +93,14 @@ const InterviewRoom = () => {
     setError(null);
 
     try {
+      //#region Get microphone access
       const micStream = await navigator.mediaDevices.getUserMedia({
         audio: { noiseSuppression: true, echoCancellation: true, autoGainControl: true },
       });
       micStreamRef.current = micStream;
+      //#endregion
 
+      //#region WebRTC connection
       const peer = new RTCPeerConnection();
       peerRef.current = peer;
 
@@ -115,15 +121,13 @@ const InterviewRoom = () => {
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
 
-      const { sdp, remainingTime } = await createInterviewSession(interviewId, offer.sdp ?? '');
+      const { sdp } = await createInterviewSession(interviewId, offer.sdp ?? '');
       await peer.setRemoteDescription({ type: 'answer', sdp });
-
-      deadlineRef.current = Date.now() + remainingTime * 1000;
-      setRemaining(remainingTime);
 
       peer.onconnectionstatechange = () => {
         if (peer.connectionState === 'failed' || peer.connectionState === 'closed') end();
       };
+      //#endregion
 
       stopMicMeterRef.current = startMicMeter(micStream, setCandidateSpeaking);
       setStatus('live');
@@ -134,6 +138,7 @@ const InterviewRoom = () => {
       setError(describeError(cause));
     }
   }, [end, interviewId, teardown]);
+  //#endregion
 
   const toggleMute = () => {
     const nextMuted = !muted;
@@ -142,20 +147,6 @@ const InterviewRoom = () => {
     });
     setMuted(nextMuted);
   };
-
-  useEffect(() => {
-    if (status !== 'live') return;
-
-    const timer = setInterval(() => {
-      const left = Math.max(0, Math.round((deadlineRef.current - Date.now()) / 1000));
-      setRemaining(left);
-      if (left === 0) end();
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [status, end]);
-
-  useEffect(() => teardown, [teardown]);
 
   const statusLine: Record<Status, string> = {
     idle: 'Your interviewer is ready when you are.',
@@ -195,7 +186,7 @@ const InterviewRoom = () => {
                   status === 'live' ? 'animate-pulse-dot bg-brand-light' : 'bg-ink-border',
                 )}
               />
-              {status === 'live' ? `Live · ${formatTime(remaining ?? 0)}` : 'Interview room'}
+              {status === 'live' ? 'Live' : 'Interview room'}
             </span>
           </div>
         </div>
@@ -257,9 +248,6 @@ const InterviewRoom = () => {
     </div>
   );
 };
-
-const formatTime = (seconds: number) =>
-  `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
 const describeError = (cause: unknown) => {
   if (cause instanceof DOMException && cause.name === 'NotAllowedError') {

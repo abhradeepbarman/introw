@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/auth-context';
-import { applyApiError } from '@/lib/form-errors';
+import { applyApiError } from '@/utils/apply-api-error';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema, type RegisterInput } from '@repo/common/validations';
 import { ArrowRight } from 'lucide-react';

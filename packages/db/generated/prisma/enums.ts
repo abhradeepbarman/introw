@@ -17,14 +17,6 @@ export const AuthProvider = {
 export type AuthProvider = (typeof AuthProvider)[keyof typeof AuthProvider]
 
 
-export const Plan = {
-  FREE: 'FREE',
-  STARTER: 'STARTER'
-} as const
-
-export type Plan = (typeof Plan)[keyof typeof Plan]
-
-
 export const UserType = {
   CANDIDATE: 'CANDIDATE',
   INTERVIEWER: 'INTERVIEWER'

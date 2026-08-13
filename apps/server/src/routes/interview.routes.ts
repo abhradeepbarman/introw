@@ -6,9 +6,8 @@ import {
   downloadTranscript,
   getInterviewResult,
   listInterviews,
-} from '../controller/interview.controller';
-import auth from '../middlewares/auth';
-import { uploadResume } from '../middlewares/upload';
+} from '../controller';
+import { auth, uploadResume } from '../middlewares';
 
 const router = Router();
 

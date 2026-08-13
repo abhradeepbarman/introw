@@ -381,6 +381,10 @@ export type PasswordTokenUncheckedUpdateManyWithoutUserNestedInput = {
   deleteMany?: Prisma.PasswordTokenScalarWhereInput | Prisma.PasswordTokenScalarWhereInput[]
 }
 
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
+}
+
 export type PasswordTokenCreateWithoutUserInput = {
   id?: string
   token: string

@@ -14,12 +14,6 @@ model User {
   password     String?
   authProvider AuthProvider @default(LOCAL)
   refreshToken String?
-  credits      Int          @default(1)
-
-  plan                 Plan      @default(FREE)
-  stripeCustomerId     String?   @unique
-  stripeSubscriptionId String?   @unique
-  planExpiresAt        DateTime?
 
   interviews     Interview[]
   passwordTokens PasswordToken[]
@@ -47,8 +41,6 @@ model Interview {
   resumeData     Json?
   status         InterviewStatus  @default(PENDING)
   callId         String?
-  startedAt      DateTime?
-  maxTime        Int              @default(0)
   createdAt      DateTime         @default(now())
   user           User?            @relation(fields: [userId], references: [id])
   userId         String?
@@ -78,11 +70,6 @@ model Message {
 enum AuthProvider {
   LOCAL
   GOOGLE
-}
-
-enum Plan {
-  FREE
-  STARTER
 }
 
 enum UserType {

@@ -1,10 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { JsonWebTokenError } from 'jsonwebtoken';
 import { ZodError } from 'zod';
-import CustomErrorHandler from '../utils/custom-error-handler';
-import { formatError } from '../utils/format-error';
-import { logger } from '../utils/logger';
-import ResponseHandler from '../utils/response-handler';
+import { CustomErrorHandler, logger, ResponseHandler } from '../utils';
 
 const errorHandler = (err: Error, req: Request, res: Response, _next: NextFunction) => {
   let statusCode = 500;
@@ -14,7 +11,7 @@ const errorHandler = (err: Error, req: Request, res: Response, _next: NextFuncti
   if (err instanceof ZodError) {
     statusCode = 422;
     message = 'Validation Error';
-    data = formatError(err);
+    data = err.issues.map((issue) => ({ field: issue.path[0], message: issue.message }));
   }
 
   if (err instanceof JsonWebTokenError) {

@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
-import envConfig from '../config/env';
-import { logger } from '../utils/logger';
+import { envConfig } from '../config';
+import { logger } from '../utils';
 
 type SendEmailInput = {
   to: string;

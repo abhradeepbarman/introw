@@ -43,16 +43,3 @@ export const DIMENSIONS: Record<DimensionKey, { label: string; blurb: string }> 
 };
 
 export const DIMENSION_KEYS = Object.keys(DIMENSIONS) as DimensionKey[];
-
-const MAX_SCORE_DRIFT = 15;
-export const settleScore = (evaluation: Evaluation): number => {
-  const scores = DIMENSION_KEYS.map((key) => evaluation[key]?.score).filter(
-    (score): score is number => score !== undefined,
-  );
-
-  if (scores.length === 0) return evaluation.overall;
-
-  const mean = Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length);
-
-  return Math.abs(evaluation.overall - mean) > MAX_SCORE_DRIFT ? mean : evaluation.overall;
-};

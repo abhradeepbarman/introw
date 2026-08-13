@@ -22,10 +22,6 @@ const _envConfig = {
     process.env.GOOGLE_AUTH_REDIRECT_URI ||
     `http://localhost:${Number(process.env.PORT) || 9000}/api/v1/auth/google/callback`,
 
-  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
-  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
-  STRIPE_STARTER_PRICE_ID: process.env.STRIPE_STARTER_PRICE_ID || '',
-
   IMAGEKIT_PRIVATE_KEY: process.env.IMAGEKIT_PRIVATE_KEY || '',
 
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',

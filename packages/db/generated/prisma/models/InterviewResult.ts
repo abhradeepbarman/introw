@@ -404,6 +404,14 @@ export type InterviewResultUncheckedUpdateOneWithoutInterviewNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.InterviewResultUpdateToOneWithWhereWithoutInterviewInput, Prisma.InterviewResultUpdateWithoutInterviewInput>, Prisma.InterviewResultUncheckedUpdateWithoutInterviewInput>
 }
 
+export type IntFieldUpdateOperationsInput = {
+  set?: number
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
 export type InterviewResultCreateWithoutInterviewInput = {
   id?: string
   score: number

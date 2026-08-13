@@ -9,9 +9,9 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { applyApiError } from '@/lib/form-errors';
-import { ApiError } from '@/services/api-client';
+import { ApiError } from '@/lib/api-error';
 import { resetPassword } from '@/services/auth.service';
+import { applyApiError } from '@/utils/apply-api-error';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { resetPasswordSchema, type ResetPasswordInput } from '@repo/common/validations';
 import { ArrowRight } from 'lucide-react';

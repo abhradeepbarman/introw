@@ -4,7 +4,9 @@ import {
   type Paginated,
   type Rubric,
 } from '@repo/common/validations';
-import { apiGet, apiRequest, downloadFile } from './api-client';
+import axiosInstance from '../lib/axios';
+import type { ApiResponse } from '@/lib/api-error';
+import { downloadFile } from '@/utils/download-file';
 
 export type CreateInterviewResponse = {
   id: string;
@@ -12,7 +14,6 @@ export type CreateInterviewResponse = {
 
 export type InterviewSessionResponse = {
   sdp: string;
-  remainingTime: number;
 };
 
 export type InterviewResult = {
@@ -22,8 +23,13 @@ export type InterviewResult = {
   transcript: TranscriptLine[];
 };
 
+export enum UserType {
+  CANDIDATE = 'CANDIDATE',
+  INTERVIEWER = 'INTERVIEWER',
+}
+
 export type TranscriptLine = {
-  speaker: 'CANDIDATE' | 'INTERVIEWER';
+  speaker: UserType;
   message: string;
   at: string;
 };
@@ -44,21 +50,29 @@ export const createInterview = (sources: InterviewSources, resume?: File | null)
   if (sources.githubUrl) body.set('githubUrl', sources.githubUrl);
   if (resume) body.set('resume', resume);
 
-  return apiRequest<CreateInterviewResponse>('/interviews', { method: 'POST', body });
+  return axiosInstance
+    .post<ApiResponse<CreateInterviewResponse>>('/interviews', body, {
+      headers: { 'Content-Type': undefined },
+    })
+    .then((res) => res.data.data);
 };
 
 export const createInterviewSession = (interviewId: string, offerSdp: string) =>
-  apiRequest<InterviewSessionResponse>(`/interviews/${interviewId}/session`, {
-    method: 'POST',
-    body: offerSdp,
-    headers: { 'Content-Type': 'application/sdp' },
-  });
+  axiosInstance
+    .post<ApiResponse<InterviewSessionResponse>>(`/interviews/${interviewId}/session`, offerSdp, {
+      headers: { 'Content-Type': 'application/sdp' },
+    })
+    .then((res) => res.data.data);
 
 export const getInterviewResult = (interviewId: string) =>
-  apiRequest<InterviewResult>(`/interviews/${interviewId}/result`, { method: 'POST' });
+  axiosInstance
+    .post<ApiResponse<InterviewResult>>(`/interviews/${interviewId}/result`)
+    .then((res) => res.data.data);
 
 export const listInterviews = (page: number, limit: number = DEFAULT_PAGE_SIZE) =>
-  apiGet<Paginated<InterviewSummary>>(`/interviews?page=${page}&limit=${limit}`);
+  axiosInstance
+    .get<ApiResponse<Paginated<InterviewSummary>>>(`/interviews?page=${page}&limit=${limit}`)
+    .then((res) => res.data.data);
 
 export const downloadReport = (interviewId: string) =>
   downloadFile(`/interviews/${interviewId}/report`, `intervue-report-${interviewId}.pdf`);

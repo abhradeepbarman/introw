@@ -20,18 +20,8 @@ export type InterviewModel = runtime.Types.Result.DefaultSelection<Prisma.$Inter
 
 export type AggregateInterview = {
   _count: InterviewCountAggregateOutputType | null
-  _avg: InterviewAvgAggregateOutputType | null
-  _sum: InterviewSumAggregateOutputType | null
   _min: InterviewMinAggregateOutputType | null
   _max: InterviewMaxAggregateOutputType | null
-}
-
-export type InterviewAvgAggregateOutputType = {
-  maxTime: number | null
-}
-
-export type InterviewSumAggregateOutputType = {
-  maxTime: number | null
 }
 
 export type InterviewMinAggregateOutputType = {
@@ -39,8 +29,6 @@ export type InterviewMinAggregateOutputType = {
   resumeUrl: string | null
   status: $Enums.InterviewStatus | null
   callId: string | null
-  startedAt: Date | null
-  maxTime: number | null
   createdAt: Date | null
   userId: string | null
 }
@@ -50,8 +38,6 @@ export type InterviewMaxAggregateOutputType = {
   resumeUrl: string | null
   status: $Enums.InterviewStatus | null
   callId: string | null
-  startedAt: Date | null
-  maxTime: number | null
   createdAt: Date | null
   userId: string | null
 }
@@ -63,29 +49,17 @@ export type InterviewCountAggregateOutputType = {
   resumeData: number
   status: number
   callId: number
-  startedAt: number
-  maxTime: number
   createdAt: number
   userId: number
   _all: number
 }
 
 
-export type InterviewAvgAggregateInputType = {
-  maxTime?: true
-}
-
-export type InterviewSumAggregateInputType = {
-  maxTime?: true
-}
-
 export type InterviewMinAggregateInputType = {
   id?: true
   resumeUrl?: true
   status?: true
   callId?: true
-  startedAt?: true
-  maxTime?: true
   createdAt?: true
   userId?: true
 }
@@ -95,8 +69,6 @@ export type InterviewMaxAggregateInputType = {
   resumeUrl?: true
   status?: true
   callId?: true
-  startedAt?: true
-  maxTime?: true
   createdAt?: true
   userId?: true
 }
@@ -108,8 +80,6 @@ export type InterviewCountAggregateInputType = {
   resumeData?: true
   status?: true
   callId?: true
-  startedAt?: true
-  maxTime?: true
   createdAt?: true
   userId?: true
   _all?: true
@@ -153,18 +123,6 @@ export type InterviewAggregateArgs<ExtArgs extends runtime.Types.Extensions.Inte
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
-   * Select which fields to average
-  **/
-  _avg?: InterviewAvgAggregateInputType
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-   * 
-   * Select which fields to sum
-  **/
-  _sum?: InterviewSumAggregateInputType
-  /**
-   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-   * 
    * Select which fields to find the minimum value
   **/
   _min?: InterviewMinAggregateInputType
@@ -195,8 +153,6 @@ export type InterviewGroupByArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   _count?: InterviewCountAggregateInputType | true
-  _avg?: InterviewAvgAggregateInputType
-  _sum?: InterviewSumAggregateInputType
   _min?: InterviewMinAggregateInputType
   _max?: InterviewMaxAggregateInputType
 }
@@ -208,13 +164,9 @@ export type InterviewGroupByOutputType = {
   resumeData: runtime.JsonValue | null
   status: $Enums.InterviewStatus
   callId: string | null
-  startedAt: Date | null
-  maxTime: number
   createdAt: Date
   userId: string | null
   _count: InterviewCountAggregateOutputType | null
-  _avg: InterviewAvgAggregateOutputType | null
-  _sum: InterviewSumAggregateOutputType | null
   _min: InterviewMinAggregateOutputType | null
   _max: InterviewMaxAggregateOutputType | null
 }
@@ -244,8 +196,6 @@ export type InterviewWhereInput = {
   resumeData?: Prisma.JsonNullableFilter<"Interview">
   status?: Prisma.EnumInterviewStatusFilter<"Interview"> | $Enums.InterviewStatus
   callId?: Prisma.StringNullableFilter<"Interview"> | string | null
-  startedAt?: Prisma.DateTimeNullableFilter<"Interview"> | Date | string | null
-  maxTime?: Prisma.IntFilter<"Interview"> | number
   createdAt?: Prisma.DateTimeFilter<"Interview"> | Date | string
   userId?: Prisma.StringNullableFilter<"Interview"> | string | null
   user?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
@@ -260,8 +210,6 @@ export type InterviewOrderByWithRelationInput = {
   resumeData?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   callId?: Prisma.SortOrderInput | Prisma.SortOrder
-  startedAt?: Prisma.SortOrderInput | Prisma.SortOrder
-  maxTime?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   userId?: Prisma.SortOrderInput | Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
@@ -279,8 +227,6 @@ export type InterviewWhereUniqueInput = Prisma.AtLeast<{
   resumeData?: Prisma.JsonNullableFilter<"Interview">
   status?: Prisma.EnumInterviewStatusFilter<"Interview"> | $Enums.InterviewStatus
   callId?: Prisma.StringNullableFilter<"Interview"> | string | null
-  startedAt?: Prisma.DateTimeNullableFilter<"Interview"> | Date | string | null
-  maxTime?: Prisma.IntFilter<"Interview"> | number
   createdAt?: Prisma.DateTimeFilter<"Interview"> | Date | string
   userId?: Prisma.StringNullableFilter<"Interview"> | string | null
   user?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
@@ -295,15 +241,11 @@ export type InterviewOrderByWithAggregationInput = {
   resumeData?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   callId?: Prisma.SortOrderInput | Prisma.SortOrder
-  startedAt?: Prisma.SortOrderInput | Prisma.SortOrder
-  maxTime?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   userId?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.InterviewCountOrderByAggregateInput
-  _avg?: Prisma.InterviewAvgOrderByAggregateInput
   _max?: Prisma.InterviewMaxOrderByAggregateInput
   _min?: Prisma.InterviewMinOrderByAggregateInput
-  _sum?: Prisma.InterviewSumOrderByAggregateInput
 }
 
 export type InterviewScalarWhereWithAggregatesInput = {
@@ -316,8 +258,6 @@ export type InterviewScalarWhereWithAggregatesInput = {
   resumeData?: Prisma.JsonNullableWithAggregatesFilter<"Interview">
   status?: Prisma.EnumInterviewStatusWithAggregatesFilter<"Interview"> | $Enums.InterviewStatus
   callId?: Prisma.StringNullableWithAggregatesFilter<"Interview"> | string | null
-  startedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Interview"> | Date | string | null
-  maxTime?: Prisma.IntWithAggregatesFilter<"Interview"> | number
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Interview"> | Date | string
   userId?: Prisma.StringNullableWithAggregatesFilter<"Interview"> | string | null
 }
@@ -329,8 +269,6 @@ export type InterviewCreateInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.InterviewStatus
   callId?: string | null
-  startedAt?: Date | string | null
-  maxTime?: number
   createdAt?: Date | string
   user?: Prisma.UserCreateNestedOneWithoutInterviewsInput
   conversations?: Prisma.MessageCreateNestedManyWithoutInterviewInput
@@ -344,8 +282,6 @@ export type InterviewUncheckedCreateInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.InterviewStatus
   callId?: string | null
-  startedAt?: Date | string | null
-  maxTime?: number
   createdAt?: Date | string
   userId?: string | null
   conversations?: Prisma.MessageUncheckedCreateNestedManyWithoutInterviewInput
@@ -359,8 +295,6 @@ export type InterviewUpdateInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumInterviewStatusFieldUpdateOperationsInput | $Enums.InterviewStatus
   callId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  maxTime?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneWithoutInterviewsNestedInput
   conversations?: Prisma.MessageUpdateManyWithoutInterviewNestedInput
@@ -374,8 +308,6 @@ export type InterviewUncheckedUpdateInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumInterviewStatusFieldUpdateOperationsInput | $Enums.InterviewStatus
   callId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  maxTime?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   conversations?: Prisma.MessageUncheckedUpdateManyWithoutInterviewNestedInput
@@ -389,8 +321,6 @@ export type InterviewCreateManyInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.InterviewStatus
   callId?: string | null
-  startedAt?: Date | string | null
-  maxTime?: number
   createdAt?: Date | string
   userId?: string | null
 }
@@ -402,8 +332,6 @@ export type InterviewUpdateManyMutationInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumInterviewStatusFieldUpdateOperationsInput | $Enums.InterviewStatus
   callId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  maxTime?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -414,8 +342,6 @@ export type InterviewUncheckedUpdateManyInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumInterviewStatusFieldUpdateOperationsInput | $Enums.InterviewStatus
   callId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  maxTime?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -437,14 +363,8 @@ export type InterviewCountOrderByAggregateInput = {
   resumeData?: Prisma.SortOrder
   status?: Prisma.SortOrder
   callId?: Prisma.SortOrder
-  startedAt?: Prisma.SortOrder
-  maxTime?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-}
-
-export type InterviewAvgOrderByAggregateInput = {
-  maxTime?: Prisma.SortOrder
 }
 
 export type InterviewMaxOrderByAggregateInput = {
@@ -452,8 +372,6 @@ export type InterviewMaxOrderByAggregateInput = {
   resumeUrl?: Prisma.SortOrder
   status?: Prisma.SortOrder
   callId?: Prisma.SortOrder
-  startedAt?: Prisma.SortOrder
-  maxTime?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
 }
@@ -463,14 +381,8 @@ export type InterviewMinOrderByAggregateInput = {
   resumeUrl?: Prisma.SortOrder
   status?: Prisma.SortOrder
   callId?: Prisma.SortOrder
-  startedAt?: Prisma.SortOrder
-  maxTime?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   userId?: Prisma.SortOrder
-}
-
-export type InterviewSumOrderByAggregateInput = {
-  maxTime?: Prisma.SortOrder
 }
 
 export type InterviewScalarRelationFilter = {
@@ -559,8 +471,6 @@ export type InterviewCreateWithoutUserInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.InterviewStatus
   callId?: string | null
-  startedAt?: Date | string | null
-  maxTime?: number
   createdAt?: Date | string
   conversations?: Prisma.MessageCreateNestedManyWithoutInterviewInput
   result?: Prisma.InterviewResultCreateNestedOneWithoutInterviewInput
@@ -573,8 +483,6 @@ export type InterviewUncheckedCreateWithoutUserInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.InterviewStatus
   callId?: string | null
-  startedAt?: Date | string | null
-  maxTime?: number
   createdAt?: Date | string
   conversations?: Prisma.MessageUncheckedCreateNestedManyWithoutInterviewInput
   result?: Prisma.InterviewResultUncheckedCreateNestedOneWithoutInterviewInput
@@ -616,8 +524,6 @@ export type InterviewScalarWhereInput = {
   resumeData?: Prisma.JsonNullableFilter<"Interview">
   status?: Prisma.EnumInterviewStatusFilter<"Interview"> | $Enums.InterviewStatus
   callId?: Prisma.StringNullableFilter<"Interview"> | string | null
-  startedAt?: Prisma.DateTimeNullableFilter<"Interview"> | Date | string | null
-  maxTime?: Prisma.IntFilter<"Interview"> | number
   createdAt?: Prisma.DateTimeFilter<"Interview"> | Date | string
   userId?: Prisma.StringNullableFilter<"Interview"> | string | null
 }
@@ -629,8 +535,6 @@ export type InterviewCreateWithoutResultInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.InterviewStatus
   callId?: string | null
-  startedAt?: Date | string | null
-  maxTime?: number
   createdAt?: Date | string
   user?: Prisma.UserCreateNestedOneWithoutInterviewsInput
   conversations?: Prisma.MessageCreateNestedManyWithoutInterviewInput
@@ -643,8 +547,6 @@ export type InterviewUncheckedCreateWithoutResultInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.InterviewStatus
   callId?: string | null
-  startedAt?: Date | string | null
-  maxTime?: number
   createdAt?: Date | string
   userId?: string | null
   conversations?: Prisma.MessageUncheckedCreateNestedManyWithoutInterviewInput
@@ -673,8 +575,6 @@ export type InterviewUpdateWithoutResultInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumInterviewStatusFieldUpdateOperationsInput | $Enums.InterviewStatus
   callId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  maxTime?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneWithoutInterviewsNestedInput
   conversations?: Prisma.MessageUpdateManyWithoutInterviewNestedInput
@@ -687,8 +587,6 @@ export type InterviewUncheckedUpdateWithoutResultInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumInterviewStatusFieldUpdateOperationsInput | $Enums.InterviewStatus
   callId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  maxTime?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   conversations?: Prisma.MessageUncheckedUpdateManyWithoutInterviewNestedInput
@@ -701,8 +599,6 @@ export type InterviewCreateWithoutConversationsInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.InterviewStatus
   callId?: string | null
-  startedAt?: Date | string | null
-  maxTime?: number
   createdAt?: Date | string
   user?: Prisma.UserCreateNestedOneWithoutInterviewsInput
   result?: Prisma.InterviewResultCreateNestedOneWithoutInterviewInput
@@ -715,8 +611,6 @@ export type InterviewUncheckedCreateWithoutConversationsInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.InterviewStatus
   callId?: string | null
-  startedAt?: Date | string | null
-  maxTime?: number
   createdAt?: Date | string
   userId?: string | null
   result?: Prisma.InterviewResultUncheckedCreateNestedOneWithoutInterviewInput
@@ -745,8 +639,6 @@ export type InterviewUpdateWithoutConversationsInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumInterviewStatusFieldUpdateOperationsInput | $Enums.InterviewStatus
   callId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  maxTime?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneWithoutInterviewsNestedInput
   result?: Prisma.InterviewResultUpdateOneWithoutInterviewNestedInput
@@ -759,8 +651,6 @@ export type InterviewUncheckedUpdateWithoutConversationsInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumInterviewStatusFieldUpdateOperationsInput | $Enums.InterviewStatus
   callId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  maxTime?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   result?: Prisma.InterviewResultUncheckedUpdateOneWithoutInterviewNestedInput
@@ -773,8 +663,6 @@ export type InterviewCreateManyUserInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: $Enums.InterviewStatus
   callId?: string | null
-  startedAt?: Date | string | null
-  maxTime?: number
   createdAt?: Date | string
 }
 
@@ -785,8 +673,6 @@ export type InterviewUpdateWithoutUserInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumInterviewStatusFieldUpdateOperationsInput | $Enums.InterviewStatus
   callId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  maxTime?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   conversations?: Prisma.MessageUpdateManyWithoutInterviewNestedInput
   result?: Prisma.InterviewResultUpdateOneWithoutInterviewNestedInput
@@ -799,8 +685,6 @@ export type InterviewUncheckedUpdateWithoutUserInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumInterviewStatusFieldUpdateOperationsInput | $Enums.InterviewStatus
   callId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  maxTime?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   conversations?: Prisma.MessageUncheckedUpdateManyWithoutInterviewNestedInput
   result?: Prisma.InterviewResultUncheckedUpdateOneWithoutInterviewNestedInput
@@ -813,8 +697,6 @@ export type InterviewUncheckedUpdateManyWithoutUserInput = {
   resumeData?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   status?: Prisma.EnumInterviewStatusFieldUpdateOperationsInput | $Enums.InterviewStatus
   callId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  startedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  maxTime?: Prisma.IntFieldUpdateOperationsInput | number
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -856,8 +738,6 @@ export type InterviewSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   resumeData?: boolean
   status?: boolean
   callId?: boolean
-  startedAt?: boolean
-  maxTime?: boolean
   createdAt?: boolean
   userId?: boolean
   user?: boolean | Prisma.Interview$userArgs<ExtArgs>
@@ -873,8 +753,6 @@ export type InterviewSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   resumeData?: boolean
   status?: boolean
   callId?: boolean
-  startedAt?: boolean
-  maxTime?: boolean
   createdAt?: boolean
   userId?: boolean
   user?: boolean | Prisma.Interview$userArgs<ExtArgs>
@@ -887,8 +765,6 @@ export type InterviewSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   resumeData?: boolean
   status?: boolean
   callId?: boolean
-  startedAt?: boolean
-  maxTime?: boolean
   createdAt?: boolean
   userId?: boolean
   user?: boolean | Prisma.Interview$userArgs<ExtArgs>
@@ -901,13 +777,11 @@ export type InterviewSelectScalar = {
   resumeData?: boolean
   status?: boolean
   callId?: boolean
-  startedAt?: boolean
-  maxTime?: boolean
   createdAt?: boolean
   userId?: boolean
 }
 
-export type InterviewOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "githubMetadata" | "resumeUrl" | "resumeData" | "status" | "callId" | "startedAt" | "maxTime" | "createdAt" | "userId", ExtArgs["result"]["interview"]>
+export type InterviewOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "githubMetadata" | "resumeUrl" | "resumeData" | "status" | "callId" | "createdAt" | "userId", ExtArgs["result"]["interview"]>
 export type InterviewInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.Interview$userArgs<ExtArgs>
   conversations?: boolean | Prisma.Interview$conversationsArgs<ExtArgs>
@@ -935,8 +809,6 @@ export type $InterviewPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     resumeData: runtime.JsonValue | null
     status: $Enums.InterviewStatus
     callId: string | null
-    startedAt: Date | null
-    maxTime: number
     createdAt: Date
     userId: string | null
   }, ExtArgs["result"]["interview"]>
@@ -1371,8 +1243,6 @@ export interface InterviewFieldRefs {
   readonly resumeData: Prisma.FieldRef<"Interview", 'Json'>
   readonly status: Prisma.FieldRef<"Interview", 'InterviewStatus'>
   readonly callId: Prisma.FieldRef<"Interview", 'String'>
-  readonly startedAt: Prisma.FieldRef<"Interview", 'DateTime'>
-  readonly maxTime: Prisma.FieldRef<"Interview", 'Int'>
   readonly createdAt: Prisma.FieldRef<"Interview", 'DateTime'>
   readonly userId: Prisma.FieldRef<"Interview", 'String'>
 }

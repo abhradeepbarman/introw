@@ -1,5 +1,5 @@
 import axios from 'axios';
-import envConfig from '../config/env';
+import { envConfig } from '../config';
 import { CustomErrorHandler } from '../utils';
 
 const GITHUB_USERNAME_REGEX = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/;

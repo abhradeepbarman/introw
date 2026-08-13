@@ -10,7 +10,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import type { NextFunction, Request, Response } from 'express';
 import jwt, { type JwtPayload } from 'jsonwebtoken';
-import envConfig from '../config/env';
+import { envConfig } from '../config';
 import {
   BCRYPT_ROUNDS,
   GOOGLE_AUTH_URL,
@@ -21,10 +21,15 @@ import {
 } from '../constants';
 import { getGoogleProfile, getGoogleTokens, sendEmail } from '../services';
 import { forgotPasswordEmailTemplate } from '../templates';
-import asyncHandler from '../utils/async-handler';
-import CustomErrorHandler from '../utils/custom-error-handler';
-import ResponseHandler from '../utils/response-handler';
-import { clearAuthCookies, cookieOptions, generateTokens, setCookies } from '../utils/tokens';
+import {
+  asyncHandler,
+  clearAuthCookies,
+  cookieOptions,
+  CustomErrorHandler,
+  generateTokens,
+  ResponseHandler,
+  setCookies,
+} from '../utils';
 
 export const userRegister = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -54,7 +59,6 @@ export const userRegister = asyncHandler(
         name: newUser.name,
         email: newUser.email,
         authProvider: newUser.authProvider,
-        credits: newUser.credits,
         access_token: accessToken,
       }),
     );
@@ -89,7 +93,6 @@ export const userLogin = asyncHandler(async (req: Request, res: Response, next: 
       name: existingUser.name,
       email: existingUser.email,
       authProvider: existingUser.authProvider,
-      credits: existingUser.credits,
       access_token: accessToken,
     }),
   );
@@ -143,7 +146,6 @@ export const refreshAccessToken = asyncHandler(
         name: userDetails.name,
         email: userDetails.email,
         authProvider: userDetails.authProvider,
-        credits: userDetails.credits,
         access_token: accessToken,
       }),
     );

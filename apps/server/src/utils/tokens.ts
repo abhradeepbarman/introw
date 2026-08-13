@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import type { Response } from 'express';
-import envConfig from '../config/env';
+import { envConfig } from '../config';
 import {
   ACCESS_COOKIE_MAX_AGE,
   ACCESS_TOKEN_COOKIE,

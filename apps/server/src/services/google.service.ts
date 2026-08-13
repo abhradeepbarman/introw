@@ -1,8 +1,7 @@
 import axios from 'axios';
-import envConfig from '../config/env';
+import { envConfig } from '../config';
 import { GOOGLE_TOKEN_URL, GOOGLE_USERINFO_URL } from '../constants';
-import CustomErrorHandler from '../utils/custom-error-handler';
-import { logger } from '../utils/logger';
+import { CustomErrorHandler, logger } from '../utils';
 
 export type GoogleProfile = {
   id: string;

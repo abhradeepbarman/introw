@@ -1,11 +1,9 @@
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { type Application } from 'express';
-import envConfig from './config/env';
-import { startInterviewExpiryJob } from './jobs/expire-interviews';
-import errorHandler from './middlewares/error-handler';
-import CustomErrorHandler from './utils/custom-error-handler';
-import { logger } from './utils/logger';
+import { envConfig } from './config';
+import { errorHandler } from './middlewares';
+import { CustomErrorHandler, logger } from './utils';
 import routes from './routes';
 
 const app: Application = express();
@@ -18,7 +16,6 @@ app.use(
     exposedHeaders: ['Content-Disposition'],
   }),
 );
-app.use('/api/v1/billing/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
@@ -35,7 +32,6 @@ app.use(errorHandler);
 
 app.listen(envConfig.PORT, () => {
   logger.info(`Server is running on port ${envConfig.PORT}`);
-  startInterviewExpiryJob();
 });
 
 export default app;

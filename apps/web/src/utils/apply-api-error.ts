@@ -1,4 +1,4 @@
-import { ApiError } from '@/services/api-client';
+import { ApiError } from '@/lib/api-error';
 import type { FieldValues, Path, UseFormSetError } from 'react-hook-form';
 
 export function applyApiError<T extends FieldValues>(
@@ -11,7 +11,7 @@ export function applyApiError<T extends FieldValues>(
     return;
   }
 
-  const matched = error.fieldErrors.filter((issue) => fields.includes(issue.field as Path<T>));
+  const matched = (error.data ?? []).filter((issue) => fields.includes(issue.field as Path<T>));
 
   if (matched.length === 0) {
     setError('root', {

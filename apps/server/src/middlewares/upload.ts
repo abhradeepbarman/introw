@@ -1,10 +1,11 @@
 import { RESUME_MAX_BYTES, RESUME_MIME_TYPE } from '@repo/common/validations';
 import type { NextFunction, Request, Response } from 'express';
 import multer, { MulterError } from 'multer';
-import CustomErrorHandler from '../utils/custom-error-handler';
+import os from 'os';
+import { CustomErrorHandler } from '../utils';
 
 const upload = multer({
-  storage: multer.memoryStorage(),
+  storage: multer.diskStorage({ destination: os.tmpdir() }),
   limits: { fileSize: RESUME_MAX_BYTES, files: 1 },
   fileFilter: (_req, file, cb) => {
     if (file.mimetype !== RESUME_MIME_TYPE) {

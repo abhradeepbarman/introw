@@ -81,11 +81,6 @@ export const UserScalarFieldEnum = {
   password: 'password',
   authProvider: 'authProvider',
   refreshToken: 'refreshToken',
-  credits: 'credits',
-  plan: 'plan',
-  stripeCustomerId: 'stripeCustomerId',
-  stripeSubscriptionId: 'stripeSubscriptionId',
-  planExpiresAt: 'planExpiresAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -112,8 +107,6 @@ export const InterviewScalarFieldEnum = {
   resumeData: 'resumeData',
   status: 'status',
   callId: 'callId',
-  startedAt: 'startedAt',
-  maxTime: 'maxTime',
   createdAt: 'createdAt',
   userId: 'userId'
 } as const

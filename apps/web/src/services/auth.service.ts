@@ -6,20 +6,33 @@ import type {
   ResetPasswordInput,
 } from '@repo/common/validations';
 import envConfig from '../config/env';
-import { apiGet, apiPost } from './api-client';
+import axiosInstance from '../lib/axios';
+import type { ApiResponse } from '@/lib/api-error';
 
-export const register = (payload: RegisterInput) => apiPost<AuthSession>('/auth/register', payload);
+export const register = (payload: RegisterInput) =>
+  axiosInstance
+    .post<ApiResponse<AuthSession>>('/auth/register', payload)
+    .then((res) => res.data.data);
 
-export const login = (payload: LoginInput) => apiPost<AuthSession>('/auth/login', payload);
+export const login = (payload: LoginInput) =>
+  axiosInstance.post<ApiResponse<AuthSession>>('/auth/login', payload).then((res) => res.data.data);
 
-export const logout = () => apiPost<{ id: string; name: string }>('/auth/logout', {});
+export const logout = () =>
+  axiosInstance
+    .post<ApiResponse<{ id: string; name: string }>>('/auth/logout', {})
+    .then((res) => res.data.data);
 
-export const getCurrentUser = () => apiGet<AuthUser>('/auth/me');
+export const getCurrentUser = () =>
+  axiosInstance.get<ApiResponse<AuthUser>>('/auth/me').then((res) => res.data.data);
 
 export const forgotPassword = (payload: ForgotPasswordInput) =>
-  apiPost<null>('/auth/forgot-password', payload);
+  axiosInstance
+    .post<ApiResponse<null>>('/auth/forgot-password', payload)
+    .then((res) => res.data.data);
 
 export const resetPassword = (token: string, payload: ResetPasswordInput) =>
-  apiPost<null>(`/auth/reset-password/${encodeURIComponent(token)}`, payload);
+  axiosInstance
+    .post<ApiResponse<null>>(`/auth/reset-password/${encodeURIComponent(token)}`, payload)
+    .then((res) => res.data.data);
 
 export const googleLoginUrl = () => `${envConfig.API_BASE_URL}/auth/google`;

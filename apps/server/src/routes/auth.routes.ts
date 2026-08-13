@@ -9,8 +9,8 @@ import {
   userLogin,
   userLogout,
   userRegister,
-} from '../controller/auth.controller';
-import auth from '../middlewares/auth';
+} from '../controller';
+import { auth } from '../middlewares';
 
 const router = Router();
 

@@ -1,0 +1,19 @@
+{
+  "name": "@repo/ai",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@google/genai": "^2.15.0",
+    "openai": "^7.4.0"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

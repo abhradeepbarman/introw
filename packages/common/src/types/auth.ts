@@ -10,7 +10,6 @@ export type AuthUser = {
   name: string;
   email: string;
   authProvider: AuthProvider;
-  credits: number;
 };
 
 export type AuthSession = AuthUser & {

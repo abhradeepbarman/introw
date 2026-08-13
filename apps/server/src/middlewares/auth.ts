@@ -1,19 +1,16 @@
 import type { NextFunction, Request, Response } from 'express';
 import jwt, { type JwtPayload } from 'jsonwebtoken';
-import envConfig from '../config/env';
+import { envConfig } from '../config';
 import { ACCESS_TOKEN_COOKIE } from '../constants';
 import { prisma } from '@repo/db';
-import asyncHandler from '../utils/async-handler';
-import CustomErrorHandler from '../utils/custom-error-handler';
-
-const readToken = (req: Request) => {
-  const header = req.headers.authorization;
-  if (header?.startsWith('Bearer ')) return header.slice(7);
-  return req.cookies?.[ACCESS_TOKEN_COOKIE] as string | undefined;
-};
+import { asyncHandler, CustomErrorHandler } from '../utils';
 
 const auth = asyncHandler(async (req: Request, _res: Response, next: NextFunction) => {
-  const token = readToken(req);
+  const header = req.headers.authorization;
+  const token = header?.startsWith('Bearer ')
+    ? header.slice(7)
+    : (req.cookies?.[ACCESS_TOKEN_COOKIE] as string | undefined);
+
   if (!token) {
     return next(CustomErrorHandler.unAuthorized());
   }
@@ -30,7 +27,6 @@ const auth = asyncHandler(async (req: Request, _res: Response, next: NextFunctio
       name: true,
       email: true,
       authProvider: true,
-      credits: true,
     },
   });
 

@@ -1,22 +1,25 @@
 import ImageKit, { toFile } from '@imagekit/nodejs';
-import { RESUME_MIME_TYPE } from '@repo/common/validations';
-import envConfig from '../config/env';
-import CustomErrorHandler from '../utils/custom-error-handler';
+import { envConfig } from '../config';
+import { CustomErrorHandler } from '../utils';
 
 const imagekit = new ImageKit({ privateKey: envConfig.IMAGEKIT_PRIVATE_KEY });
 
-export const uploadResume = async (resume: Buffer, userId: string): Promise<string> => {
-  const fileName = `${userId}-${Date.now()}.pdf`;
-
+export const uploadFile = async (
+  file: Buffer,
+  fileName: string,
+  folder: string,
+  mimeType: string
+): Promise<string> => {
   const { url } = await imagekit.files.upload({
-    file: await toFile(resume, fileName, { type: RESUME_MIME_TYPE }),
+    file: await toFile(file, fileName, { type: mimeType }),
     fileName,
-    folder: '/resumes',
+    folder,
   });
 
   if (!url) {
-    throw CustomErrorHandler.serverError('Could not store the résumé');
+    throw CustomErrorHandler.serverError('Could not store the file');
   }
 
   return url;
 };
+
