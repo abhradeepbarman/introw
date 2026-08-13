@@ -10,7 +10,6 @@ type AuthContextValue = {
   login: (payload: LoginInput) => Promise<void>;
   register: (payload: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
-  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -19,26 +18,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const refreshUser = useCallback(async () => {
-    try {
-      setUser(await authService.getCurrentUser());
-    } catch {
-      setUser(null);
-    }
+  useEffect(() => {
+    authService
+      .getCurrentUser()
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => setIsLoading(false));
   }, []);
 
-  useEffect(() => {
-    refreshUser().finally(() => setIsLoading(false));
-  }, [refreshUser]);
-
   const login = useCallback(async (payload: LoginInput) => {
-    const session = await authService.login(payload);
-    setUser(session);
+    setUser(await authService.login(payload));
   }, []);
 
   const register = useCallback(async (payload: RegisterInput) => {
-    const session = await authService.register(payload);
-    setUser(session);
+    setUser(await authService.register(payload));
   }, []);
 
   const logout = useCallback(async () => {
@@ -50,8 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, isLoading, login, register, logout, refreshUser }),
-    [user, isLoading, login, register, logout, refreshUser],
+    () => ({ user, isLoading, login, register, logout }),
+    [user, isLoading, login, register, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

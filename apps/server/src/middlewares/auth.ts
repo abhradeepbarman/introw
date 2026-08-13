@@ -6,10 +6,7 @@ import { prisma } from '@repo/db';
 import { asyncHandler, CustomErrorHandler } from '../utils';
 
 const auth = asyncHandler(async (req: Request, _res: Response, next: NextFunction) => {
-  const header = req.headers.authorization;
-  const token = header?.startsWith('Bearer ')
-    ? header.slice(7)
-    : (req.cookies?.[ACCESS_TOKEN_COOKIE] as string | undefined);
+  const token = req.cookies?.[ACCESS_TOKEN_COOKIE] as string | undefined;
 
   if (!token) {
     return next(CustomErrorHandler.unAuthorized());

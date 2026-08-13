@@ -59,7 +59,6 @@ export const userRegister = asyncHandler(
         name: newUser.name,
         email: newUser.email,
         authProvider: newUser.authProvider,
-        access_token: accessToken,
       }),
     );
   },
@@ -93,7 +92,6 @@ export const userLogin = asyncHandler(async (req: Request, res: Response, next: 
       name: existingUser.name,
       email: existingUser.email,
       authProvider: existingUser.authProvider,
-      access_token: accessToken,
     }),
   );
 });
@@ -116,7 +114,7 @@ export const userLogout = asyncHandler(async (req: Request, res: Response) => {
 
 export const refreshAccessToken = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const token = req.cookies?.[REFRESH_TOKEN_COOKIE] || req.body?.refresh_token;
+    const token = req.cookies?.[REFRESH_TOKEN_COOKIE];
     if (!token) {
       return next(CustomErrorHandler.unAuthorized());
     }
@@ -140,15 +138,7 @@ export const refreshAccessToken = asyncHandler(
       data: { refreshToken },
     });
 
-    return res.status(200).send(
-      ResponseHandler(200, 'Refresh token generated', {
-        id: userDetails.id,
-        name: userDetails.name,
-        email: userDetails.email,
-        authProvider: userDetails.authProvider,
-        access_token: accessToken,
-      }),
-    );
+    return res.status(200).send(ResponseHandler(200, 'Session refreshed successfully'));
   },
 );
 

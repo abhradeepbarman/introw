@@ -1,18 +1,17 @@
 import { useAuth } from '@/context/auth-context';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const GoogleCallbackPage = () => {
-  const { refreshUser } = useAuth();
+  const { user, isLoading } = useAuth();
   const navigate = useNavigate();
-  const handledRef = useRef(false);
 
   useEffect(() => {
-    if (handledRef.current) return;
-    handledRef.current = true;
-
-    refreshUser().finally(() => navigate('/', { replace: true }));
-  }, [refreshUser, navigate]);
+    if (isLoading) return;
+    navigate(user ? '/' : '/login?error=Google+sign-in+failed.+Please+try+again.', {
+      replace: true,
+    });
+  }, [user, isLoading, navigate]);
 
   return (
     <main className="grid min-h-dvh place-items-center px-6">

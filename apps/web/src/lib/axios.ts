@@ -2,62 +2,50 @@ import envConfig from '@/config/env';
 import axios from 'axios';
 import { toApiError } from './api-error';
 
+const REFRESH_PATH = '/auth/refresh';
+const ME_PATH = '/auth/me';
+
 const axiosInstance = axios.create({
   baseURL: envConfig.API_BASE_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-const refreshAccessToken = async () => {
-  try {
-    const response = await axios.post(
-      `${envConfig.API_BASE_URL}/auth/refresh`,
-      {},
-      { withCredentials: true },
-    );
-    const { access_token: accessToken } = response.data.data;
+let pendingRefresh: Promise<boolean> | null = null;
 
-    const user = JSON.parse(localStorage.getItem('user') || 'null');
-    if (user) {
-      localStorage.setItem('user', JSON.stringify({ ...user, access_token: accessToken }));
-    }
+const refreshAccessToken = () => {
+  pendingRefresh ??= axiosInstance
+    .post(REFRESH_PATH)
+    .then(() => true)
+    .catch(() => false)
+    .finally(() => {
+      pendingRefresh = null;
+    });
 
-    return accessToken;
-  } catch (error) {
-    console.error('Failed to refresh token:', error);
-    localStorage.removeItem('user');
-    window.location.href = '/login';
-    return null;
-  }
+  return pendingRefresh;
 };
-
-axiosInstance.interceptors.request.use(
-  (config) => {
-    const user = JSON.parse(localStorage.getItem('user')!);
-    const accessToken = user?.access_token;
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  },
-);
 
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      originalRequest.url !== REFRESH_PATH
+    ) {
       originalRequest._retry = true;
-      const newAccessToken = await refreshAccessToken();
 
-      if (newAccessToken) {
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+      if (await refreshAccessToken()) {
         return axiosInstance(originalRequest);
+      }
+
+      if (originalRequest.url !== ME_PATH) {
+        window.location.href = '/login';
       }
     }
 

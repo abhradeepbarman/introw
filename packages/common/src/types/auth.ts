@@ -11,7 +11,3 @@ export type AuthUser = {
   email: string;
   authProvider: AuthProvider;
 };
-
-export type AuthSession = AuthUser & {
-  access_token: string;
-};

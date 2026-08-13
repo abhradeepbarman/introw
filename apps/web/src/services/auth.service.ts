@@ -1,4 +1,4 @@
-import type { AuthSession, AuthUser } from '@repo/common/types';
+import type { AuthUser } from '@repo/common/types';
 import type {
   ForgotPasswordInput,
   LoginInput,
@@ -10,12 +10,10 @@ import axiosInstance from '../lib/axios';
 import type { ApiResponse } from '@/lib/api-error';
 
 export const register = (payload: RegisterInput) =>
-  axiosInstance
-    .post<ApiResponse<AuthSession>>('/auth/register', payload)
-    .then((res) => res.data.data);
+  axiosInstance.post<ApiResponse<AuthUser>>('/auth/register', payload).then((res) => res.data.data);
 
 export const login = (payload: LoginInput) =>
-  axiosInstance.post<ApiResponse<AuthSession>>('/auth/login', payload).then((res) => res.data.data);
+  axiosInstance.post<ApiResponse<AuthUser>>('/auth/login', payload).then((res) => res.data.data);
 
 export const logout = () =>
   axiosInstance
