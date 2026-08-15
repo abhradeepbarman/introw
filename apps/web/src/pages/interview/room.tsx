@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { ApiError } from '@/lib/api-error';
 import { createInterviewSession } from '@/services/interview.service';
 import type { LucideIcon } from 'lucide-react';
-import { Bot, Mic, MicOff, PhoneOff, User } from 'lucide-react';
+import { Bot, CreditCard, Mic, MicOff, PhoneOff, User } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
@@ -48,12 +48,13 @@ const startMicMeter = (stream: MediaStream, onChange: (speaking: boolean) => voi
   };
 };
 
-const InterviewRoom = () => {
+const InterviewRoomPage = () => {
   const { id: interviewId } = useParams();
   const navigate = useNavigate();
 
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [outOfSessions, setOutOfSessions] = useState(false);
   const [muted, setMuted] = useState(false);
   const [candidateSpeaking, setCandidateSpeaking] = useState(false);
   const [interviewerSpeaking, setInterviewerSpeaking] = useState(false);
@@ -136,6 +137,7 @@ const InterviewRoom = () => {
       teardown();
       setStatus('error');
       setError(describeError(cause));
+      setOutOfSessions(cause instanceof ApiError && cause.status === 402);
     }
   }, [end, interviewId, teardown]);
   //#endregion
@@ -228,6 +230,16 @@ const InterviewRoom = () => {
                 End interview
               </Button>
             </>
+          ) : outOfSessions ? (
+            <Button
+              asChild
+              className="h-12 rounded-full bg-brand px-7 text-[0.9375rem] font-semibold text-brand-foreground hover:bg-brand-hover focus-visible:ring-brand-light/40"
+            >
+              <Link to="/billing">
+                <CreditCard className="size-4" />
+                View plans
+              </Link>
+            </Button>
           ) : (
             <Button
               type="button"
@@ -294,4 +306,4 @@ function Seat({ icon: Icon, name, speaking, muted = false }: SeatProps) {
   );
 }
 
-export default InterviewRoom;
+export default InterviewRoomPage;
