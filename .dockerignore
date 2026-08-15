@@ -1,0 +1,25 @@
+node_modules
+**/node_modules
+
+.git
+.gitignore
+
+.turbo
+**/.turbo
+
+dist
+**/dist
+build
+**/build
+
+# regenerated inside the image so it always matches schema.prisma
+packages/db/generated
+
+# secrets stay out of the image; compose passes them at runtime
+.env
+**/.env
+**/.env.local
+
+**/*.md
+.vscode
+.idea
