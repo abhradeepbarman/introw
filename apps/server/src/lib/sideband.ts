@@ -4,7 +4,7 @@ import type { Interview } from '@repo/db';
 import { UserType } from '@repo/db';
 import { envConfig } from '../config';
 import { INTERVIEW_WRAP_UP_SECONDS } from '../constants';
-import { prisma } from '@repo/db';
+import { queueMessage } from './queue';
 
 type GithubRepo = {
   name: string;
@@ -23,21 +23,18 @@ export const initSideband = async (callId: string, interview: Interview) => {
 
   activeSessions.set(callId, ws);
 
-  let writeQueue: Promise<unknown> = Promise.resolve();
-
   const saveMessage = (message: string, createdBy: UserType) => {
     const text = message?.trim();
     if (!text) return;
 
-    writeQueue = writeQueue
-      .then(() =>
-        prisma.message.create({
-          data: { interviewId: interview.id, message: text, createdBy },
-        }),
-      )
-      .catch((err) => {
-        console.error('❌ Failed to save message:', err);
-      });
+    queueMessage({
+      interviewId: interview.id,
+      message: text,
+      createdBy,
+      createdAt: new Date().toISOString(),
+    }).catch((err) => {
+      console.error('❌ Failed to queue message:', err);
+    });
   };
 
   const repos = (interview.githubMetadata as GithubRepo[] | null) ?? [];
@@ -110,10 +107,9 @@ export const initSideband = async (callId: string, interview: Interview) => {
 
   ws.on('error', console.error);
 
-  ws.on('close', async () => {
+  ws.on('close', () => {
     console.log('❌ Sideband disconnected');
     activeSessions.delete(callId);
-    await writeQueue;
   });
 };
 

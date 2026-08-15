@@ -1,4 +1,5 @@
 import { PgBoss } from 'pg-boss';
+import { prisma, type UserType } from '@repo/db';
 import { envConfig } from '../config';
 import { INTERVIEW_WRAP_UP_SECONDS, MAX_INTERVIEW_MINUTES } from '../constants';
 import { logger } from '../utils';
@@ -6,8 +7,16 @@ import { warnInterviewEnding } from './sideband';
 
 const WRAP_UP_QUEUE = 'interview-wrap-up';
 const HANGUP_QUEUE = 'interview-hangup';
+const MESSAGE_QUEUE = 'interview-message';
 
 type CallJob = { callId: string };
+
+type MessageJob = {
+  interviewId: string;
+  message: string;
+  createdBy: UserType;
+  createdAt: string;
+};
 
 const boss = new PgBoss(envConfig.DIRECT_URL || envConfig.DATABASE_URL);
 
@@ -31,6 +40,7 @@ export const startQueue = async () => {
   await boss.start();
   await boss.createQueue(WRAP_UP_QUEUE);
   await boss.createQueue(HANGUP_QUEUE);
+  await boss.createQueue(MESSAGE_QUEUE);
 
   await boss.work<CallJob>(WRAP_UP_QUEUE, async (jobs) => {
     for (const job of jobs) warnInterviewEnding(job.data.callId);
@@ -39,6 +49,14 @@ export const startQueue = async () => {
   await boss.work<CallJob>(HANGUP_QUEUE, async (jobs) => {
     for (const job of jobs) await hangup(job.data.callId);
   });
+
+  await boss.work<MessageJob>(MESSAGE_QUEUE, async (jobs) => {
+    await prisma.message.createMany({ data: jobs.map((job) => job.data) });
+  });
+};
+
+export const queueMessage = async (data: MessageJob) => {
+  await boss.send(MESSAGE_QUEUE, data);
 };
 
 export const scheduleInterviewEnd = async (callId: string) => {
