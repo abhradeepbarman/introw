@@ -101,3 +101,5 @@ jobs:
             docker compose pull
             docker compose up -d --wait
             docker image prune -f
+            sudo nginx -t
+            sudo systemctl reload nginx
