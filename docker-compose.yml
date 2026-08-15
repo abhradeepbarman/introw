@@ -4,35 +4,37 @@ services:
     restart: unless-stopped
     env_file: .env.docker
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
       interval: 5s
       timeout: 5s
       retries: 10
 
   server:
+    image: ${IMAGE_PREFIX:-intervue}/intervue-server:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: docker/Dockerfile.server
     restart: unless-stopped
     env_file: .env.docker
     ports:
-      - "9000:9000"
+      - '9000:9000'
     depends_on:
       postgres:
         condition: service_healthy
 
   web:
+    image: ${IMAGE_PREFIX:-intervue}/intervue-web:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: docker/Dockerfile.web
     restart: unless-stopped
     env_file: .env.docker
     ports:
-      - "3000:3000"
+      - '3000:3000'
     depends_on:
       - server
 

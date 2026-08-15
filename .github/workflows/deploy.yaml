@@ -1,8 +1,6 @@
-name: Deploy
+name: CI / Deploy
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -13,48 +11,93 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: oven-sh/setup-bun@v2
+      - name: Setup bun
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.2.21
 
-      - run: bun install --frozen-lockfile
+      - name: Install
+        run: bun install --frozen-lockfile
 
-      - run: bun run lint
+      - name: Lint
+        run: bun run lint
 
-      - run: bun run check-types
+      - name: Type check
+        run: bun run check-types
 
-  deploy:
+  version:
     needs: check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          script_stop: true
-          command_timeout: 20m
-          script: |
-            cd ${{ secrets.APP_PATH }}
-            git fetch --prune origin main
-            git reset --hard origin/main
-            docker compose up -d --build --wait
-            docker image prune -f
-
-  release:
-    needs: deploy
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      tag: ${{ steps.tag.outputs.new_tag || github.sha }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: mathieudutour/github-tag-action@v6.2
+      - name: Tag release
+        id: tag
+        uses: mathieudutour/github-tag-action@v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           default_bump: patch
+
+  build:
+    needs: version
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [server, web]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Docker login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build and push ${{ matrix.app }}
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile.${{ matrix.app }}
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/intervue-${{ matrix.app }}:${{ needs.version.outputs.tag }}
+            ${{ secrets.DOCKER_USERNAME }}/intervue-${{ matrix.app }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to host
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          ENV_DOCKER: ${{ secrets.ENV_DOCKER }}
+          IMAGE_PREFIX: ${{ secrets.DOCKER_USERNAME }}
+          IMAGE_TAG: ${{ needs.version.outputs.tag }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: ENV_DOCKER,IMAGE_PREFIX,IMAGE_TAG
+          script: |
+            set -e
+            cd ${{ secrets.APP_PATH }}
+            git fetch --prune origin main
+            git reset --hard origin/main
+            printf '%s\n' "$ENV_DOCKER" > .env.docker
+            chmod 600 .env.docker
+            docker compose pull
+            docker compose up -d --wait
+            docker image prune -f
