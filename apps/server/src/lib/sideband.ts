@@ -3,6 +3,7 @@ import { resumeSchema, type Resume } from '@repo/common/validations';
 import type { Interview } from '@repo/db';
 import { UserType } from '@repo/db';
 import { envConfig } from '../config';
+import { INTERVIEW_WRAP_UP_SECONDS } from '../constants';
 import { prisma } from '@repo/db';
 
 type GithubRepo = {
@@ -11,12 +12,16 @@ type GithubRepo = {
   description: string | null;
 };
 
+const activeSessions = new Map<string, WebSocket>();
+
 export const initSideband = async (callId: string, interview: Interview) => {
   const ws = new WebSocket(`wss://api.openai.com/v1/realtime?call_id=${callId}`, {
     headers: {
       Authorization: `Bearer ${envConfig.OPENAI_API_KEY}`,
     },
   });
+
+  activeSessions.set(callId, ws);
 
   let writeQueue: Promise<unknown> = Promise.resolve();
 
@@ -107,8 +112,25 @@ export const initSideband = async (callId: string, interview: Interview) => {
 
   ws.on('close', async () => {
     console.log('❌ Sideband disconnected');
+    activeSessions.delete(callId);
     await writeQueue;
   });
+};
+
+export const warnInterviewEnding = (callId: string) => {
+  const ws = activeSessions.get(callId);
+
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+  ws.send(
+    JSON.stringify({
+      type: 'response.create',
+      response: {
+        instructions: `The interview time is almost up — you have about ${INTERVIEW_WRAP_UP_SECONDS} seconds left.
+          Do not ask another question. Wrap up now: give the candidate a brief closing remark, thank them, and end the conversation.`,
+      },
+    }),
+  );
 };
 
 const formatResume = (resume: Resume) =>

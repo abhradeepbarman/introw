@@ -2,6 +2,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { type Application } from 'express';
 import { envConfig } from './config';
+import { startQueue } from './lib';
 import { errorHandler } from './middlewares';
 import { CustomErrorHandler, logger } from './utils';
 import routes from './routes';
@@ -29,6 +30,9 @@ app.use((_req, _res, next) => {
 
 // error handler
 app.use(errorHandler);
+
+// queue init
+await startQueue();
 
 app.listen(envConfig.PORT, () => {
   logger.info(`Server is running on port ${envConfig.PORT}`);

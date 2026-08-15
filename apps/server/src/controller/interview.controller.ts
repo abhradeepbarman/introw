@@ -7,7 +7,7 @@ import {
 import { readFile, unlink } from 'fs/promises';
 import { envConfig, sessionConfig } from '../config';
 import { InterviewStatus, prisma, UserType } from '@repo/db';
-import { initSideband, uploadFile } from '../lib';
+import { initSideband, scheduleInterviewEnd, uploadFile } from '../lib';
 import { fetchGithubMetadata } from '../services';
 import { buildReportPdf } from '../templates';
 import { asyncHandler, CustomErrorHandler, ResponseHandler } from '../utils';
@@ -99,6 +99,7 @@ export const startSession = asyncHandler(async (req, res, next) => {
   //#endregion
 
   await initSideband(callId, interview);
+  await scheduleInterviewEnd(callId);
 
   return res.status(200).send(ResponseHandler(200, 'Session created successfully', { sdp }));
 });
