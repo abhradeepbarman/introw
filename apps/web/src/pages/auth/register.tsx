@@ -10,7 +10,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/context/auth-context';
+import { useAuth } from '@/contexts/auth-context';
 import { applyApiError } from '@/utils/apply-api-error';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema, type RegisterInput } from '@repo/common/validations';

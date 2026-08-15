@@ -11,7 +11,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/context/auth-context';
+import { useAuth } from '@/contexts/auth-context';
 import { cn } from '@/lib/utils';
 import { ApiError } from '@/lib/api-error';
 import { createInterview } from '@/services/interview.service';

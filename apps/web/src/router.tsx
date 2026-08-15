@@ -1,5 +1,5 @@
 import { GuestRoute, ProtectedRoute } from '@/components/common/route-guards';
-import { AuthProvider } from '@/context/auth-context';
+import { AuthProvider } from '@/contexts/auth-context';
 import ForgotPasswordPage from '@/pages/auth/forgot-password';
 import GoogleCallbackPage from '@/pages/auth/google-callback';
 import LoginPage from '@/pages/auth/login';

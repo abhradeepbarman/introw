@@ -1,4 +1,4 @@
-import { useAuth } from '@/context/auth-context';
+import { useAuth } from '@/contexts/auth-context';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 function SessionCheck() {
