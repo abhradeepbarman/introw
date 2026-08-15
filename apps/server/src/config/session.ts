@@ -1,6 +1,6 @@
 export const sessionConfig = {
   type: 'realtime',
-  model: 'gpt-realtime-2.1',
+  model: 'gpt-realtime-mini',
   instructions: `You are an AI interviewer conducting a technical interview.`,
   audio: {
     input: {
@@ -14,7 +14,7 @@ export const sessionConfig = {
       },
     },
     output: {
-      voice: 'marin',
+      voice: 'cedar',
     },
   },
 };
