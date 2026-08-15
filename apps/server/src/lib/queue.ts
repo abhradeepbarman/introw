@@ -2,12 +2,14 @@ import { PgBoss } from 'pg-boss';
 import { prisma, type UserType } from '@repo/db';
 import { envConfig } from '../config';
 import { INTERVIEW_WRAP_UP_SECONDS, MAX_INTERVIEW_MINUTES } from '../constants';
+import { sendEmail, type SendEmailInput } from '../services/email.service';
 import { logger } from '../utils';
 import { warnInterviewEnding } from './sideband';
 
 const WRAP_UP_QUEUE = 'interview-wrap-up';
 const HANGUP_QUEUE = 'interview-hangup';
 const MESSAGE_QUEUE = 'interview-message';
+const EMAIL_QUEUE = 'email';
 
 type CallJob = { callId: string };
 
@@ -41,6 +43,7 @@ export const startQueue = async () => {
   await boss.createQueue(WRAP_UP_QUEUE);
   await boss.createQueue(HANGUP_QUEUE);
   await boss.createQueue(MESSAGE_QUEUE);
+  await boss.createQueue(EMAIL_QUEUE, { retryLimit: 1, retryBackoff: true });
 
   await boss.work<CallJob>(WRAP_UP_QUEUE, async (jobs) => {
     for (const job of jobs) warnInterviewEnding(job.data.callId);
@@ -53,10 +56,18 @@ export const startQueue = async () => {
   await boss.work<MessageJob>(MESSAGE_QUEUE, async (jobs) => {
     await prisma.message.createMany({ data: jobs.map((job) => job.data) });
   });
+
+  await boss.work<SendEmailInput>(EMAIL_QUEUE, async (jobs) => {
+    for (const job of jobs) await sendEmail(job.data);
+  });
 };
 
 export const queueMessage = async (data: MessageJob) => {
   await boss.send(MESSAGE_QUEUE, data);
+};
+
+export const queueEmail = async (data: SendEmailInput) => {
+  await boss.send(EMAIL_QUEUE, data);
 };
 
 export const scheduleInterviewEnd = async (callId: string, startedAt: Date) => {

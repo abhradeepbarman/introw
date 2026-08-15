@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 import { envConfig } from '../config';
 import { logger } from '../utils';
 
-type SendEmailInput = {
+export type SendEmailInput = {
   to: string;
   subject: string;
   body: string;

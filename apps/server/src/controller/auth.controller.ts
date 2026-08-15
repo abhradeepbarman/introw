@@ -19,7 +19,8 @@ import {
   PASSWORD_TOKEN_TTL,
   REFRESH_TOKEN_COOKIE,
 } from '../constants';
-import { getGoogleProfile, getGoogleTokens, sendEmail } from '../services';
+import { queueEmail } from '../lib';
+import { getGoogleProfile, getGoogleTokens } from '../services';
 import { forgotPasswordEmailTemplate } from '../templates';
 import {
   asyncHandler,
@@ -176,7 +177,7 @@ export const sendForgotPasswordEmail = asyncHandler(async (req: Request, res: Re
 
   const link = `${envConfig.APP_URL}/reset-password/${token}`;
   const html = forgotPasswordEmailTemplate(existingUser.name, link);
-  await sendEmail({ to: email, subject: 'Reset Your Password', body: html });
+  await queueEmail({ to: email, subject: 'Reset Your Password', body: html });
 
   return genericResponse();
 });
