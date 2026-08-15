@@ -42,7 +42,7 @@ export function UserNav() {
 
   const signOut = async () => {
     await logout();
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
   return (

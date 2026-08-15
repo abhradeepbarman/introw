@@ -89,7 +89,7 @@ const InterviewRoomPage = () => {
   const end = useCallback(() => {
     teardown();
     if (interviewId) void completeInterview(interviewId).catch(() => {});
-    navigate(`/interview/${interviewId}/result`);
+    navigate(`/interview/${interviewId}/result`, { replace: true });
   }, [interviewId, navigate, teardown]);
 
   const endOnDisconnect = useCallback(() => {
@@ -283,7 +283,7 @@ const InterviewRoomPage = () => {
               asChild
               className="h-12 rounded-full bg-brand px-7 text-[0.9375rem] font-semibold text-brand-foreground hover:bg-brand-hover focus-visible:ring-brand-light/40"
             >
-              <Link to={`/interview/${interviewId}/result`}>
+              <Link to={`/interview/${interviewId}/result`} replace>
                 <FileText className="size-4" />
                 View result
               </Link>
