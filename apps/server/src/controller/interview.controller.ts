@@ -7,7 +7,7 @@ import {
 import { readFile, unlink } from 'fs/promises';
 import { envConfig, sessionConfig } from '../config';
 import { InterviewStatus, prisma, UserType } from '@repo/db';
-import { initSideband, scheduleInterviewEnd, uploadFile } from '../lib';
+import { hangupCall, initSideband, scheduleInterviewEnd, uploadFile } from '../lib';
 import { fetchGithubMetadata } from '../services';
 import { buildReportPdf } from '../templates';
 import { asyncHandler, CustomErrorHandler, ResponseHandler } from '../utils';
@@ -123,6 +123,52 @@ export const startSession = asyncHandler(async (req, res, next) => {
   await scheduleInterviewEnd(callId, startedAt);
 
   return res.status(200).send(ResponseHandler(200, 'Session created successfully', { sdp }));
+});
+
+export const getInterview = asyncHandler(async (req, res, next) => {
+  const { id: interviewId } = req.params as { id: string };
+
+  const interview = await prisma.interview.findFirst({
+    where: { id: interviewId, OR: [{ userId: req.user.id }, { userId: null }] },
+    select: { id: true, status: true },
+  });
+
+  if (!interview) {
+    return next(CustomErrorHandler.notFound('Interview not found'));
+  }
+
+  return res.status(200).send(ResponseHandler(200, 'Interview fetched successfully', interview));
+});
+
+export const completeInterview = asyncHandler(async (req, res, next) => {
+  const { id: interviewId } = req.params as { id: string };
+
+  const interview = await prisma.interview.findFirst({
+    where: { id: interviewId, OR: [{ userId: req.user.id }, { userId: null }] },
+  });
+
+  if (!interview) {
+    return next(CustomErrorHandler.notFound('Interview not found'));
+  }
+
+  // An interview gets one live session — leaving it ends it
+  if (interview.status === InterviewStatus.IN_PROGRESS) {
+    if (interview.callId) await hangupCall(interview.callId);
+
+    await prisma.interview.update({
+      where: { id: interview.id },
+      data: { status: InterviewStatus.COMPLETED },
+    });
+  }
+
+  return res.status(200).send(
+    ResponseHandler(200, 'Interview completed successfully', {
+      status:
+        interview.status === InterviewStatus.IN_PROGRESS
+          ? InterviewStatus.COMPLETED
+          : interview.status,
+    }),
+  );
 });
 
 export const listInterviews = asyncHandler(async (req, res) => {

@@ -24,7 +24,7 @@ const boss = new PgBoss(envConfig.DIRECT_URL || envConfig.DATABASE_URL);
 
 boss.on('error', (error) => logger.error(error));
 
-const hangup = async (callId: string) => {
+export const hangupCall = async (callId: string) => {
   const response = await fetch(`https://api.openai.com/v1/realtime/calls/${callId}/hangup`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${envConfig.OPENAI_API_KEY}` },
@@ -50,7 +50,7 @@ export const startQueue = async () => {
   });
 
   await boss.work<CallJob>(HANGUP_QUEUE, async (jobs) => {
-    for (const job of jobs) await hangup(job.data.callId);
+    for (const job of jobs) await hangupCall(job.data.callId);
   });
 
   await boss.work<MessageJob>(MESSAGE_QUEUE, async (jobs) => {

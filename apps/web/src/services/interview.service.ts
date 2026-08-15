@@ -64,6 +64,16 @@ export const createInterviewSession = (interviewId: string, offerSdp: string) =>
     })
     .then((res) => res.data.data);
 
+export const getInterview = (interviewId: string) =>
+  axiosInstance
+    .get<ApiResponse<{ id: string; status: InterviewStatus }>>(`/interviews/${interviewId}`)
+    .then((res) => res.data.data);
+
+export const completeInterview = (interviewId: string) =>
+  axiosInstance
+    .post<ApiResponse<{ status: InterviewStatus }>>(`/interviews/${interviewId}/complete`)
+    .then((res) => res.data.data);
+
 export const getInterviewResult = (interviewId: string) =>
   axiosInstance
     .post<ApiResponse<InterviewResult>>(`/interviews/${interviewId}/result`)

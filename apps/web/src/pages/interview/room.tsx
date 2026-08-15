@@ -2,13 +2,17 @@ import { Brand } from '@/components/common/brand';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ApiError } from '@/lib/api-error';
-import { createInterviewSession } from '@/services/interview.service';
+import {
+  completeInterview,
+  createInterviewSession,
+  getInterview,
+} from '@/services/interview.service';
 import type { LucideIcon } from 'lucide-react';
-import { Bot, CreditCard, Mic, MicOff, PhoneOff, User } from 'lucide-react';
+import { Bot, CreditCard, FileText, Mic, MicOff, PhoneOff, User } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
-type Status = 'idle' | 'connecting' | 'live' | 'error';
+type Status = 'checking' | 'idle' | 'connecting' | 'live' | 'ended' | 'error';
 
 const SPEAKING_THRESHOLD = 0.02;
 const LEVEL_DECAY = 0.85;
@@ -52,7 +56,7 @@ const InterviewRoomPage = () => {
   const { id: interviewId } = useParams();
   const navigate = useNavigate();
 
-  const [status, setStatus] = useState<Status>('idle');
+  const [status, setStatus] = useState<Status>('checking');
   const [error, setError] = useState<string | null>(null);
   const [outOfSessions, setOutOfSessions] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -72,18 +76,58 @@ const InterviewRoomPage = () => {
     micStreamRef.current?.getTracks().forEach((track) => track.stop());
     micStreamRef.current = null;
 
-    peerRef.current?.close();
-    peerRef.current = null;
+    if (peerRef.current) {
+      // detach first, or closing re-enters through onconnectionstatechange
+      peerRef.current.onconnectionstatechange = null;
+      peerRef.current.close();
+      peerRef.current = null;
+    }
 
     if (audioRef.current) audioRef.current.srcObject = null;
   }, []);
 
   const end = useCallback(() => {
     teardown();
+    if (interviewId) void completeInterview(interviewId).catch(() => {});
     navigate(`/interview/${interviewId}/result`);
   }, [interviewId, navigate, teardown]);
 
+  const endOnDisconnect = useCallback(() => {
+    teardown();
+    if (interviewId) void completeInterview(interviewId).catch(() => {});
+    setStatus('ended');
+  }, [interviewId, teardown]);
+
   useEffect(() => teardown, [teardown]);
+  //#endregion
+
+  //#region Resume guard
+  useEffect(() => {
+    if (!interviewId) return;
+    let active = true;
+
+    getInterview(interviewId)
+      .then(async ({ status: current }) => {
+        if (current === 'PENDING') {
+          if (active) setStatus('idle');
+          return;
+        }
+
+        // the page was reloaded or reopened, so the one live session is over
+        if (current === 'IN_PROGRESS') await completeInterview(interviewId);
+        if (active) setStatus('ended');
+      })
+      .catch((cause: unknown) => {
+        if (!active) return;
+        console.error('Failed to load the interview:', cause);
+        setStatus('error');
+        setError(describeError(cause));
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [interviewId]);
   //#endregion
 
   //#region Join
@@ -126,7 +170,9 @@ const InterviewRoomPage = () => {
       await peer.setRemoteDescription({ type: 'answer', sdp });
 
       peer.onconnectionstatechange = () => {
-        if (peer.connectionState === 'failed' || peer.connectionState === 'closed') end();
+        if (peer.connectionState === 'failed' || peer.connectionState === 'closed') {
+          endOnDisconnect();
+        }
       };
       //#endregion
 
@@ -139,7 +185,7 @@ const InterviewRoomPage = () => {
       setError(describeError(cause));
       setOutOfSessions(cause instanceof ApiError && cause.status === 402);
     }
-  }, [end, interviewId, teardown]);
+  }, [endOnDisconnect, interviewId, teardown]);
   //#endregion
 
   const toggleMute = () => {
@@ -151,9 +197,11 @@ const InterviewRoomPage = () => {
   };
 
   const statusLine: Record<Status, string> = {
+    checking: 'Loading',
     idle: 'Your interviewer is ready when you are.',
     connecting: 'Connecting',
     live: muted ? 'Mic off' : interviewerSpeaking ? 'Interviewer speaking' : 'Listening',
+    ended: 'This interview has ended.',
     error: error ?? 'Something went wrong.',
   };
 
@@ -230,6 +278,16 @@ const InterviewRoomPage = () => {
                 End interview
               </Button>
             </>
+          ) : status === 'ended' ? (
+            <Button
+              asChild
+              className="h-12 rounded-full bg-brand px-7 text-[0.9375rem] font-semibold text-brand-foreground hover:bg-brand-hover focus-visible:ring-brand-light/40"
+            >
+              <Link to={`/interview/${interviewId}/result`}>
+                <FileText className="size-4" />
+                View result
+              </Link>
+            </Button>
           ) : outOfSessions ? (
             <Button
               asChild
@@ -240,7 +298,7 @@ const InterviewRoomPage = () => {
                 View plans
               </Link>
             </Button>
-          ) : (
+          ) : status === 'checking' ? null : (
             <Button
               type="button"
               disabled={status === 'connecting'}
