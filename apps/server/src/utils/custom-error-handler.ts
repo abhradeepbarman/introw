@@ -24,6 +24,10 @@ class CustomErrorHandler extends Error {
     return new CustomErrorHandler(403, message);
   }
 
+  static paymentRequired(message: string = 'Payment required'): CustomErrorHandler {
+    return new CustomErrorHandler(402, message);
+  }
+
   static notFound(message: string = 'Resource not found'): CustomErrorHandler {
     return new CustomErrorHandler(404, message);
   }

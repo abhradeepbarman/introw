@@ -70,6 +70,21 @@ export const startSession = asyncHandler(async (req, res, next) => {
     return next(CustomErrorHandler.badRequest('This interview has already ended'));
   }
 
+  // Only the first start costs a session; reconnects reuse the original clock
+  const isFirstStart = interview.status === InterviewStatus.PENDING;
+  const startedAt = interview.startedAt ?? new Date();
+
+  if (isFirstStart) {
+    const charged = await prisma.user.updateMany({
+      where: { id: userId, credits: { gt: 0 } },
+      data: { credits: { decrement: 1 } },
+    });
+
+    if (charged.count === 0) {
+      return next(CustomErrorHandler.paymentRequired('No interview sessions left'));
+    }
+  }
+
   //#region Connect to OpenAI Realtime API  for SDP exchange and call creation
 
   const fd = new FormData();
@@ -89,17 +104,23 @@ export const startSession = asyncHandler(async (req, res, next) => {
   const location = sdpResponse.headers.get('Location');
   const callId = location?.split('/').pop();
 
-  if (!callId) return next(CustomErrorHandler.notAllowed('Call ID not found in response'));
+  if (!callId) {
+    if (isFirstStart) {
+      await prisma.user.update({ where: { id: userId }, data: { credits: { increment: 1 } } });
+    }
+
+    return next(CustomErrorHandler.notAllowed('Call ID not found in response'));
+  }
 
   await prisma.interview.update({
     where: { id: interview.id },
-    data: { status: 'IN_PROGRESS', callId },
+    data: { status: 'IN_PROGRESS', callId, startedAt },
   });
 
   //#endregion
 
   await initSideband(callId, interview);
-  await scheduleInterviewEnd(callId);
+  await scheduleInterviewEnd(callId, startedAt);
 
   return res.status(200).send(ResponseHandler(200, 'Session created successfully', { sdp }));
 });

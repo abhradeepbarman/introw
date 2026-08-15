@@ -17,6 +17,8 @@ app.use(
     exposedHeaders: ['Content-Disposition'],
   }),
 );
+// stripe verifies the signature against the unparsed body, so this must precede express.json
+app.use('/api/v1/billing/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());

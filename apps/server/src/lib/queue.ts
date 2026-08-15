@@ -59,9 +59,15 @@ export const queueMessage = async (data: MessageJob) => {
   await boss.send(MESSAGE_QUEUE, data);
 };
 
-export const scheduleInterviewEnd = async (callId: string) => {
-  const maxSeconds = MAX_INTERVIEW_MINUTES * 60;
+export const scheduleInterviewEnd = async (callId: string, startedAt: Date) => {
+  const endsAt = startedAt.getTime() + MAX_INTERVIEW_MINUTES * 60 * 1000;
+  const secondsLeft = Math.max(0, Math.round((endsAt - Date.now()) / 1000));
 
-  await boss.sendAfter(WRAP_UP_QUEUE, { callId }, null, maxSeconds - INTERVIEW_WRAP_UP_SECONDS);
-  await boss.sendAfter(HANGUP_QUEUE, { callId }, null, maxSeconds);
+  await boss.sendAfter(
+    WRAP_UP_QUEUE,
+    { callId },
+    null,
+    Math.max(0, secondsLeft - INTERVIEW_WRAP_UP_SECONDS),
+  );
+  await boss.sendAfter(HANGUP_QUEUE, { callId }, null, secondsLeft);
 };
