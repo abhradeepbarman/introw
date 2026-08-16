@@ -144,12 +144,12 @@ jobs:
             REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git"
 
             if [ ! -d .git ]; then
-              git clone "$REPO_URL" .
-              git remote set-url origin "https://github.com/${GH_REPO}.git"
-            else
-              git fetch --prune "$REPO_URL" main
-              git reset --hard FETCH_HEAD
+              git init -q
+              git remote add origin "https://github.com/${GH_REPO}.git"
             fi
+
+            git fetch "$REPO_URL" main
+            git reset --hard FETCH_HEAD
 
             git log -1 --oneline
 
