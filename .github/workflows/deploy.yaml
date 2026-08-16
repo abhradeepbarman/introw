@@ -109,13 +109,18 @@ jobs:
           ENV_DOCKER: ${{ secrets.ENV_DOCKER }}
           IMAGE_PREFIX: ${{ secrets.DOCKER_USERNAME }}
           IMAGE_TAG: ${{ needs.version.outputs.tag }}
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APP_PATH: ${{ secrets.APP_PATH }}
 
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-          envs: ENV_DOCKER,IMAGE_PREFIX,IMAGE_TAG
+          envs: ENV_DOCKER,IMAGE_PREFIX,IMAGE_TAG,DOCKER_USERNAME,DOCKER_TOKEN,GH_REPO,GH_TOKEN,APP_PATH
 
           script: |
             set -e
@@ -124,7 +129,8 @@ jobs:
             echo "Starting deployment"
             echo "======================================"
 
-            cd "${{ secrets.APP_PATH }}"
+            mkdir -p "$APP_PATH"
+            cd "$APP_PATH"
 
             echo "Current directory:"
             pwd
@@ -132,26 +138,58 @@ jobs:
             echo "Checking Docker Compose..."
             docker compose version
 
+            echo "Pulling repo from GitHub..."
+
+            # token is only ever passed inline, never written into .git/config
+            REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git"
+
+            if [ ! -d .git ]; then
+              git clone "$REPO_URL" .
+              git remote set-url origin "https://github.com/${GH_REPO}.git"
+            else
+              git fetch --prune "$REPO_URL" main
+              git reset --hard FETCH_HEAD
+            fi
+
+            git log -1 --oneline
+
             echo "Writing production environment..."
 
-            printf '%s\n' "$ENV_DOCKER" > .env
+            # services read this via `env_file: .env.docker` in docker-compose.yml
+            printf '%s\n' "$ENV_DOCKER" > .env.docker
+            chmod 600 .env.docker
 
-            printf 'IMAGE_PREFIX=%s\n' "$IMAGE_PREFIX" >> .env
+            # compose reads .env only to interpolate ${IMAGE_PREFIX}/${IMAGE_TAG}
+            printf 'IMAGE_PREFIX=%s\n' "$IMAGE_PREFIX" > .env
             printf 'IMAGE_TAG=%s\n' "$IMAGE_TAG" >> .env
-
             chmod 600 .env
+
+            echo "Logging in to Docker Hub..."
+
+            printf '%s' "$DOCKER_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
             echo "Pulling Docker images..."
 
-            docker compose pull
+            docker compose pull server web
 
-            echo "Starting application..."
+            echo "Ensuring Postgres is up..."
 
-            docker compose up -d --wait --remove-orphans
+            docker compose up -d postgres
+
+            echo "Swapping app containers..."
+
+            if ! docker compose up -d --no-deps --wait server web; then
+              echo "Deploy failed - recent logs:"
+              docker compose logs --tail=100 server web
+              docker logout
+              exit 1
+            fi
 
             echo "Cleaning unused images..."
 
             docker image prune -f
+
+            docker logout
 
             echo "Checking Nginx..."
 
