@@ -102,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy to host
+      - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
 
         env:
@@ -120,12 +120,17 @@ jobs:
           script: |
             set -e
 
-            cd ${{ secrets.APP_PATH }}
+            echo "======================================"
+            echo "Starting deployment"
+            echo "======================================"
 
-            echo "Updating repository..."
+            cd "${{ secrets.APP_PATH }}"
 
-            git fetch --prune origin main
-            git reset --hard origin/main
+            echo "Current directory:"
+            pwd
+
+            echo "Checking Docker Compose..."
+            docker compose version
 
             echo "Writing production environment..."
 
@@ -160,4 +165,6 @@ jobs:
 
             docker compose ps
 
-            echo "Done!"
+            echo "======================================"
+            echo "Deployment complete"
+            echo "======================================"
