@@ -109,16 +109,20 @@ jobs:
           ENV_DOCKER: ${{ secrets.ENV_DOCKER }}
           IMAGE_PREFIX: ${{ secrets.DOCKER_USERNAME }}
           IMAGE_TAG: ${{ needs.version.outputs.tag }}
+
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
           APP_PATH: ${{ secrets.APP_PATH }}
 
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
 
           envs: ENV_DOCKER,IMAGE_PREFIX,IMAGE_TAG,DOCKER_USERNAME,DOCKER_TOKEN,GH_REPO,GH_TOKEN,APP_PATH
 
@@ -129,21 +133,35 @@ jobs:
             echo "Starting deployment"
             echo "======================================"
 
+            # ==================================================
+            # APPLICATION DIRECTORY
+            # ==================================================
+
             mkdir -p "$APP_PATH"
             cd "$APP_PATH"
 
             echo "Current directory:"
             pwd
 
+            # ==================================================
+            # DOCKER COMPOSE
+            # ==================================================
+
             echo "Checking Docker Compose..."
+
             docker compose version
+
+            # ==================================================
+            # UPDATE REPOSITORY
+            # ==================================================
 
             echo "Pulling repo from GitHub..."
 
-            # token is only ever passed inline, never written into .git/config
             REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${GH_REPO}.git"
 
-            if [ ! -d .git ]; then
+            if [ ! -d ".git" ]; then
+              echo "Initializing repository..."
+
               git init -q
               git remote add origin "https://github.com/${GH_REPO}.git"
             fi
@@ -151,47 +169,96 @@ jobs:
             git fetch "$REPO_URL" main
             git reset --hard FETCH_HEAD
 
+            echo "Current commit:"
+
             git log -1 --oneline
+
+            # ==================================================
+            # ENVIRONMENT
+            # ==================================================
 
             echo "Writing production environment..."
 
-            # services read this via `env_file: .env.docker` in docker-compose.yml
+            # Runtime environment used by containers
             printf '%s\n' "$ENV_DOCKER" > .env.docker
             chmod 600 .env.docker
 
-            # compose reads .env only to interpolate ${IMAGE_PREFIX}/${IMAGE_TAG}
+            # Variables used by docker-compose.yml
             printf 'IMAGE_PREFIX=%s\n' "$IMAGE_PREFIX" > .env
             printf 'IMAGE_TAG=%s\n' "$IMAGE_TAG" >> .env
             chmod 600 .env
 
+            # ==================================================
+            # DOCKER HUB
+            # ==================================================
+
             echo "Logging in to Docker Hub..."
 
-            printf '%s' "$DOCKER_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
+            printf '%s' "$DOCKER_TOKEN" | \
+              docker login \
+                --username "$DOCKER_USERNAME" \
+                --password-stdin
+
+            # ==================================================
+            # PULL APPLICATION IMAGES
+            # ==================================================
 
             echo "Pulling Docker images..."
 
             docker compose pull server web
 
-            echo "Ensuring Postgres is up..."
+            # ==================================================
+            # POSTGRES
+            # ==================================================
+
+            echo "Ensuring PostgreSQL is running..."
 
             docker compose up -d postgres
 
-            echo "Swapping app containers..."
+            # ==================================================
+            # DEPLOY APPLICATION
+            # ==================================================
+
+            echo "Deploying application containers..."
 
             if ! docker compose up -d --no-deps --wait server web; then
-              echo "Deploy failed - recent logs:"
-              docker compose logs --tail=100 server web
-              docker logout
+              echo "======================================"
+              echo "Deployment failed"
+              echo "======================================"
+
+              echo "Recent server logs:"
+              docker compose logs --tail=100 server
+
+              echo "Recent web logs:"
+              docker compose logs --tail=100 web
+
+              docker logout || true
+
               exit 1
             fi
 
-            echo "Cleaning unused images..."
+            # ==================================================
+            # NGINX
+            # ==================================================
 
-            docker image prune -f
+            echo "Installing Nginx configuration..."
 
-            docker logout
+            sudo cp \
+              "$APP_PATH/nginx/nginx.conf" \
+              /etc/nginx/sites-available/introw.conf
 
-            echo "Checking Nginx..."
+            echo "Enabling Nginx site..."
+
+            sudo ln -sfn \
+              /etc/nginx/sites-available/introw.conf \
+              /etc/nginx/sites-enabled/introw.conf
+
+            echo "Removing default Nginx site..."
+
+            sudo rm -f \
+              /etc/nginx/sites-enabled/default
+
+            echo "Testing Nginx configuration..."
 
             sudo nginx -t
 
@@ -199,7 +266,23 @@ jobs:
 
             sudo systemctl reload nginx
 
-            echo "Deployment status..."
+            # ==================================================
+            # CLEANUP
+            # ==================================================
+
+            echo "Cleaning unused Docker images..."
+
+            docker image prune -f
+
+            echo "Logging out of Docker Hub..."
+
+            docker logout || true
+
+            # ==================================================
+            # STATUS
+            # ==================================================
+
+            echo "Deployment status:"
 
             docker compose ps
 
