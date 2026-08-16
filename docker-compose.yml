@@ -14,7 +14,7 @@ services:
       retries: 10
 
   server:
-    image: ${IMAGE_PREFIX:-intervue}/intervue-server:${IMAGE_TAG:-latest}
+    image: ${IMAGE_PREFIX:-introw}/introw-server:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: docker/Dockerfile.server
@@ -27,7 +27,7 @@ services:
         condition: service_healthy
 
   web:
-    image: ${IMAGE_PREFIX:-intervue}/intervue-web:${IMAGE_TAG:-latest}
+    image: ${IMAGE_PREFIX:-introw}/introw-web:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: docker/Dockerfile.web

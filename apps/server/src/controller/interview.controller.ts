@@ -95,7 +95,7 @@ export const startSession = asyncHandler(async (req, res, next) => {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${envConfig.OPENAI_API_KEY}`,
-      'OpenAI-Safety-Identifier': `intervue-${userId}`,
+      'OpenAI-Safety-Identifier': `introw-${userId}`,
     },
     body: fd,
   });
@@ -241,7 +241,7 @@ export const downloadReport = asyncHandler(async (req, res, next) => {
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader(
     'Content-Disposition',
-    `attachment; filename="intervue-report-${interview.id}.pdf"`,
+    `attachment; filename="introw-report-${interview.id}.pdf"`,
   );
 
   return res.status(200).send(Buffer.from(pdf));
@@ -269,7 +269,7 @@ export const downloadTranscript = asyncHandler(async (req, res, next) => {
   );
 
   const header = [
-    'Intervue — interview transcript',
+    'Introw — interview transcript',
     `Interview: ${interview.id}`,
     `Date: ${interview.createdAt.toISOString()}`,
   ].join('\n');
@@ -279,7 +279,7 @@ export const downloadTranscript = asyncHandler(async (req, res, next) => {
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   res.setHeader(
     'Content-Disposition',
-    `attachment; filename="intervue-transcript-${interview.id}.txt"`,
+    `attachment; filename="introw-transcript-${interview.id}.txt"`,
   );
 
   return res.status(200).send(file);

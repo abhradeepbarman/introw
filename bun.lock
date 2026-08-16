@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "intervue",
+      "name": "introw",
       "devDependencies": {
         "prettier": "^3.7.4",
         "turbo": "^2.10.7",

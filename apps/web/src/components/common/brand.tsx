@@ -30,7 +30,7 @@ export function BrandMark({ className }: { className?: string }) {
 export function Wordmark({ className }: { className?: string }) {
   return (
     <span className={cn('font-display text-[1.0625rem] font-bold tracking-[-0.03em]', className)}>
-      intervue
+      introw
       <span className="text-brand">.</span>
     </span>
   );
@@ -49,7 +49,7 @@ export function Brand({ className, to = '/' }: { className?: string; to?: string
   return (
     <Link
       to={to}
-      aria-label="intervue home"
+      aria-label="introw home"
       className={cn(
         'flex items-center gap-2.5 rounded-md outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-brand/40',
         className,

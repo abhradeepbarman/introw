@@ -1,6 +1,6 @@
-# Intervue
+# Introw
 
-Intervue is a Bun/Turbo monorepo for an AI interview platform. The app is split into a React client, an Express API, and shared TypeScript packages so UI forms, API payloads, and server validation stay aligned.
+Introw is a Bun/Turbo monorepo for an AI interview platform. The app is split into a React client, an Express API, and shared TypeScript packages so UI forms, API payloads, and server validation stay aligned.
 
 ## Architecture
 

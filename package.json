@@ -1,5 +1,5 @@
 {
-  "name": "intervue",
+  "name": "introw",
   "private": true,
   "scripts": {
     "build": "turbo run build",

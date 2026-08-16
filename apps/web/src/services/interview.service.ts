@@ -85,7 +85,7 @@ export const listInterviews = (page: number, limit: number = DEFAULT_PAGE_SIZE) 
     .then((res) => res.data.data);
 
 export const downloadReport = (interviewId: string) =>
-  downloadFile(`/interviews/${interviewId}/report`, `intervue-report-${interviewId}.pdf`);
+  downloadFile(`/interviews/${interviewId}/report`, `introw-report-${interviewId}.pdf`);
 
 export const downloadTranscript = (interviewId: string) =>
-  downloadFile(`/interviews/${interviewId}/transcript`, `intervue-transcript-${interviewId}.txt`);
+  downloadFile(`/interviews/${interviewId}/transcript`, `introw-transcript-${interviewId}.txt`);

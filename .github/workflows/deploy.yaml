@@ -75,8 +75,8 @@ jobs:
           file: ./docker/Dockerfile.${{ matrix.app }}
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/intervue-${{ matrix.app }}:${{ needs.version.outputs.tag }}
-            ${{ secrets.DOCKER_USERNAME }}/intervue-${{ matrix.app }}:latest
+            ${{ secrets.DOCKER_USERNAME }}/introw-${{ matrix.app }}:${{ needs.version.outputs.tag }}
+            ${{ secrets.DOCKER_USERNAME }}/introw-${{ matrix.app }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

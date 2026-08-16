@@ -216,7 +216,7 @@ const StartInterviewPage = () => {
             </h1>
 
             <p className="mt-7 max-w-lg text-lg leading-relaxed text-muted-foreground">
-              Point Intervue at your work — your GitHub, your résumé, or both — and it interviews
+              Point Introw at your work — your GitHub, your résumé, or both — and it interviews
               you on what is actually there. Out loud, with follow-ups, and a scored report at the
               end.
             </p>

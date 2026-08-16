@@ -158,10 +158,10 @@ export const buildReportPdf = async (interview: ReportInput): Promise<Uint8Array
     italic: await pdf.embedFont(StandardFonts.HelveticaOblique),
   };
 
-  pdf.setTitle(`Intervue report ${interview.id}`);
-  pdf.setCreator('Intervue');
+  pdf.setTitle(`Introw report ${interview.id}`);
+  pdf.setCreator('Introw');
 
-  writeText(layout, 'INTERVUE', { font: layout.bold, size: 9, color: BRAND });
+  writeText(layout, 'INTROW', { font: layout.bold, size: 9, color: BRAND });
   gap(layout, 6);
   writeText(layout, 'Interview report', { font: layout.bold, size: 22 });
   gap(layout, 4);
