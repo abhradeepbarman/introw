@@ -96,8 +96,8 @@ jobs:
             cd ${{ secrets.APP_PATH }}
             git fetch --prune origin main
             git reset --hard origin/main
-            printf '%s\n' "$ENV_DOCKER" > .env.docker
-            chmod 600 .env.docker
+            printf '%s\n' "$ENV_DOCKER" > .env
+            chmod 600 .env
             docker compose pull
             docker compose up -d --wait
             docker image prune -f
