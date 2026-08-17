@@ -1,0 +1,28 @@
+FROM oven/bun:1.2.21
+
+WORKDIR /app
+
+COPY package.json bun.lock ./
+COPY apps/server/package.json apps/server/
+COPY apps/web/package.json apps/web/
+COPY packages/ai/package.json packages/ai/
+COPY packages/common/package.json packages/common/
+COPY packages/db/package.json packages/db/
+COPY packages/eslint-config/package.json packages/eslint-config/
+COPY packages/typescript-config/package.json packages/typescript-config/
+
+RUN bun install --frozen-lockfile
+
+COPY . .
+
+ENV NODE_ENV=production
+ENV PORT=3000
+
+EXPOSE 3000
+
+# bunfig.toml lives here and registers bun-plugin-tailwind for the HTML bundler
+WORKDIR /app/apps/web
+
+USER bun
+
+CMD ["bun", "src/index.tsx"]

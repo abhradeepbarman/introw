@@ -3,9 +3,7 @@ const _envConfig = {
   PORT: Number(process.env.PORT) || 9000,
   APP_URL: process.env.APP_URL || 'http://localhost:3000',
 
-  CRAWLBASE_PROXY_HOST: process.env.CRAWLBASE_PROXY_HOST || '',
-  CRAWLBASE_PROXY_KEY: process.env.CRAWLBASE_PROXY_KEY || '',
-  CRAWLBASE_PROXY_PORT: Number(process.env.CRAWLBASE_PROXY_PORT) || 8012,
+  CRAWLBASE_PROXY_TOKEN: process.env.CRAWLBASE_PROXY_TOKEN || '',
 
   DATABASE_URL: process.env.DATABASE_URL || '',
   DIRECT_URL: process.env.DIRECT_URL || '',
@@ -31,7 +29,7 @@ const _envConfig = {
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
   EMAIL_FROM: process.env.EMAIL_FROM || 'Introw <no-reply@introw.tech>',
 
-  GITHUB_TOKEN: process.env.GITHUB_TOKEN || '',
+  GH_TOKEN: process.env.GH_TOKEN || '',
 };
 
 const envConfig = Object.freeze(_envConfig);

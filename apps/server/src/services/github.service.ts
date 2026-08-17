@@ -81,28 +81,30 @@ const truncateDescription = (description: string | null | undefined): string | n
   return `${description.slice(0, DESCRIPTION_MAX_LENGTH - 1).trimEnd()}…`;
 };
 
-const githubGet = <T>(url: string, params?: Record<string, unknown>) =>
-  axios.get<T>(url, {
-    params,
+const CRAWLBASE_ENDPOINT = 'https://api.crawlbase.com/';
+
+const githubGet = async <T>(url: string): Promise<{ data: T; status: number }> => {
+  const response = await axios.get<T>(CRAWLBASE_ENDPOINT, {
     timeout: REQUEST_TIMEOUT_MS,
-    headers: {
-      Accept: 'application/vnd.github+json',
-      ...(envConfig.GITHUB_TOKEN ? { Authorization: `Bearer ${envConfig.GITHUB_TOKEN}` } : {}),
-    },
-    proxy: {
-      protocol: 'http',
-      host: envConfig.CRAWLBASE_PROXY_HOST,
-      port: envConfig.CRAWLBASE_PROXY_PORT,
-      auth: { username: envConfig.CRAWLBASE_PROXY_KEY, password: '' },
+    params: {
+      token: envConfig.CRAWLBASE_PROXY_TOKEN,
+      url,
+      request_headers: [
+        'Accept:application/vnd.github+json',
+        ...(envConfig.GH_TOKEN ? [`Authorization:Bearer ${envConfig.GH_TOKEN}`] : []),
+      ].join('|'),
     },
   });
 
+  return { data: response.data, status: Number(response.headers['original_status']) };
+};
+
 const fetchReadmeDepth = async (owner: string, repo: string): Promise<ReadmeDepth> => {
   try {
-    const { data } = await githubGet<{ size: number }>(
+    const { data, status } = await githubGet<{ size: number }>(
       `https://api.github.com/repos/${owner}/${repo}/readme`,
     );
-    if (!data.size) return 'none';
+    if (status !== 200 || !data.size) return 'none';
     return data.size < README_BRIEF_THRESHOLD_BYTES ? 'brief' : 'detailed';
   } catch {
     return 'none';
@@ -118,21 +120,21 @@ export const fetchGithubMetadata = async (githubUrl: string): Promise<GithubProj
   let response;
   try {
     response = await githubGet<GithubRepo[]>(
-      `https://api.github.com/users/${encodeURIComponent(githubUsername)}/repos`,
-      { per_page: 100, sort: 'pushed', direction: 'desc', type: 'owner' },
+      `https://api.github.com/users/${encodeURIComponent(githubUsername)}/repos?per_page=100&sort=pushed&direction=desc&type=owner`,
     );
   } catch (err) {
-    if (axios.isAxiosError(err)) {
-      if (err.code === 'ECONNABORTED') {
-        throw new CustomErrorHandler(504, 'GitHub request timed out, try again shortly');
-      }
-      const status = err.response?.status;
-      if (status === 404) throw CustomErrorHandler.notFound('GitHub user not found');
-      if (status === 403 || status === 429) {
-        throw new CustomErrorHandler(429, 'GitHub rate limit exceeded, try again shortly');
-      }
+    if (axios.isAxiosError(err) && err.code === 'ECONNABORTED') {
+      throw new CustomErrorHandler(504, 'GitHub request timed out, try again shortly');
     }
     throw err;
+  }
+
+  if (response.status === 404) throw CustomErrorHandler.notFound('GitHub user not found');
+  if (response.status === 403 || response.status === 429) {
+    throw new CustomErrorHandler(429, 'GitHub rate limit exceeded, try again shortly');
+  }
+  if (response.status !== 200) {
+    throw new CustomErrorHandler(502, 'Could not reach GitHub, try again shortly');
   }
 
   const raw = Array.isArray(response.data) ? response.data : [];

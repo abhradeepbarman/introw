@@ -1,0 +1,29 @@
+# dependencies are reinstalled inside the image from bun.lock
+node_modules
+**/node_modules
+
+.git
+.gitignore
+
+# turbo's local cache
+.turbo
+**/.turbo
+
+# build outputs; both images run from source
+dist
+**/dist
+
+# secrets stay out of the image, compose injects them at runtime
+.env
+**/.env
+**/.env.*
+
+# the build context never needs its own build definitions
+docker
+docker-compose*.yaml
+.dockerignore
+
+*.md
+.vscode
+.idea
+.DS_Store
