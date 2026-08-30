@@ -2,6 +2,7 @@ import {
   DEFAULT_PAGE_SIZE,
   type InterviewSources,
   type Paginated,
+  type Resume,
   type Rubric,
 } from '@repo/common/validations';
 import axiosInstance from '../lib/axios';
@@ -43,6 +44,9 @@ export type InterviewSummary = {
   score: number;
   hasReport: boolean;
   messageCount: number;
+  hasResume: boolean;
+  resumeUrl?: string | null;
+  resumeData?: Resume | null;
 };
 
 export const createInterview = (sources: InterviewSources, resume?: File | null) => {

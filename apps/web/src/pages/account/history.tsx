@@ -9,8 +9,9 @@ import {
   listInterviews,
   type InterviewSummary,
 } from '@/services/interview.service';
+import { ResumePreviewPanel } from '@/components/interview/resume-preview-panel';
 import type { Paginated } from '@repo/common/validations';
-import { ArrowRight, ChevronLeft, ChevronRight, Download, FileText } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight, Download, FileText, FileUser } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 
@@ -38,7 +39,13 @@ const formatDate = (iso: string) =>
 const ROW_ACTION =
   'flex h-12 items-center justify-center gap-2 label-mono text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand/40 disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-4';
 
-function InterviewRow({ interview }: { interview: InterviewSummary }) {
+function InterviewRow({
+  interview,
+  onPreviewResume,
+}: {
+  interview: InterviewSummary;
+  onPreviewResume: (interview: InterviewSummary) => void;
+}) {
   const [busy, setBusy] = useState<'report' | 'transcript' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,9 +71,17 @@ function InterviewRow({ interview }: { interview: InterviewSummary }) {
       <div className="flex items-start justify-between gap-4 px-6 py-5">
         <div className="min-w-0 space-y-2">
           <p className="label-mono text-muted-foreground">{formatDate(interview.createdAt)}</p>
-          <p className="text-sm text-muted-foreground">
-            {STATUS_LABEL[interview.status]} · {interview.messageCount} lines
-          </p>
+          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <span>
+              {STATUS_LABEL[interview.status]} · {interview.messageCount} lines
+            </span>
+            {interview.hasResume && (
+              <span className="inline-flex items-center gap-1 rounded bg-brand/10 px-2 py-0.5 font-mono text-[10px] font-medium text-brand">
+                <FileText className="size-3" />
+                Résumé attached
+              </span>
+            )}
+          </div>
         </div>
 
         {interview.hasReport ? (
@@ -82,11 +97,27 @@ function InterviewRow({ interview }: { interview: InterviewSummary }) {
         )}
       </div>
 
-      <div className="grid divide-y divide-border border-t border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+      <div
+        className={cn(
+          'grid divide-y divide-border border-t border-border sm:divide-x sm:divide-y-0',
+          interview.hasResume ? 'sm:grid-cols-4' : 'sm:grid-cols-3',
+        )}
+      >
         <Link to={`/interview/${interview.id}/result`} className={ROW_ACTION}>
           <FileText />
           View report
         </Link>
+
+        {interview.hasResume && (
+          <button
+            type="button"
+            onClick={() => onPreviewResume(interview)}
+            className={cn(ROW_ACTION, 'text-foreground hover:text-brand')}
+          >
+            <FileUser />
+            Résumé
+          </button>
+        )}
 
         <button
           type="button"
@@ -233,6 +264,9 @@ const InterviewHistoryPage = () => {
   const [result, setResult] = useState<Paginated<InterviewSummary> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedResumeInterview, setSelectedResumeInterview] = useState<InterviewSummary | null>(
+    null,
+  );
 
   const goToPage = (next: number) => {
     setSearchParams({ page: String(next) });
@@ -303,7 +337,11 @@ const InterviewHistoryPage = () => {
               <>
                 <ul className="space-y-4">
                   {result.items.map((interview) => (
-                    <InterviewRow key={interview.id} interview={interview} />
+                    <InterviewRow
+                      key={interview.id}
+                      interview={interview}
+                      onPreviewResume={setSelectedResumeInterview}
+                    />
                   ))}
                 </ul>
 
@@ -313,6 +351,11 @@ const InterviewHistoryPage = () => {
           </div>
         </div>
       </div>
+
+      <ResumePreviewPanel
+        interview={selectedResumeInterview}
+        onClose={() => setSelectedResumeInterview(null)}
+      />
     </main>
   );
 };

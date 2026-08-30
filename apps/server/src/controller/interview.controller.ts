@@ -186,6 +186,8 @@ export const listInterviews = asyncHandler(async (req, res) => {
         id: true,
         createdAt: true,
         status: true,
+        resumeUrl: true,
+        resumeData: true,
         result: { select: { score: true } },
         _count: { select: { conversations: true } },
       },
@@ -199,6 +201,9 @@ export const listInterviews = asyncHandler(async (req, res) => {
     score: interview.result?.score ?? 0,
     hasReport: Boolean(interview.result),
     messageCount: interview._count.conversations,
+    hasResume: Boolean(interview.resumeUrl),
+    resumeUrl: interview.resumeUrl ?? null,
+    resumeData: interview.resumeData ?? null,
   }));
 
   return res.status(200).send(
@@ -324,16 +329,20 @@ export const getInterviewResult = asyncHandler(async (req, res, next) => {
 
   const { score, feedback, rubric } = await evaluateInterview(interview.conversations);
 
-  await prisma.$transaction([
-    prisma.interviewResult.create({ data: { interviewId, score, feedback, rubric } }),
+  const [savedResult] = await prisma.$transaction([
+    prisma.interviewResult.upsert({
+      where: { interviewId },
+      create: { interviewId, score, feedback, rubric },
+      update: { score, feedback, rubric },
+    }),
     prisma.interview.update({ where: { id: interviewId }, data: { status: 'COMPLETED' } }),
   ]);
 
   return res.status(200).send(
     ResponseHandler(200, 'Interview evaluated successfully', {
-      score,
-      feedback,
-      rubric,
+      score: savedResult.score,
+      feedback: savedResult.feedback,
+      rubric: savedResult.rubric,
       transcript,
     }),
   );
