@@ -17,7 +17,7 @@ services:
       retries: 10
 
   server:
-    image: ${DOCKER_USERNAME:?set DOCKER_USERNAME in .env to your Docker Hub username}/introw-server:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USERNAME:?set DOCKERHUB_USERNAME in .env to your Docker Hub username}/introw-server:${IMAGE_TAG:-latest}
     pull_policy: always
     restart: unless-stopped
     env_file: .env
@@ -31,7 +31,7 @@ services:
         condition: service_healthy
 
   web:
-    image: ${DOCKER_USERNAME:?set DOCKER_USERNAME in .env to your Docker Hub username}/introw-web:${IMAGE_TAG:-latest}
+    image: ${DOCKERHUB_USERNAME:?set DOCKERHUB_USERNAME in .env to your Docker Hub username}/introw-web:${IMAGE_TAG:-latest}
     pull_policy: always
     restart: unless-stopped
     env_file: .env
